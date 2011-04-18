@@ -1,0 +1,25 @@
+# -*- python -*-
+Import('env')
+import os
+
+constAwareLib = env.LoadableModuleIncomplete("const_aware_mod", "const_aware_mod.cpp",
+                                       LIBS=env.getpylibs("bputils"))
+
+testLib = env.LoadableModuleIncomplete("test_mod", "test_mod.cpp",
+                                       LIBS=env.getpylibs("bputils"))
+
+#
+# Tests
+#
+import lsst.scons.tests
+import os
+
+tests = lsst.scons.tests.Control(env, verbose=True)
+
+for target in tests.run("const_aware.py"):
+    env.Depends(target, constAwareLib)
+    env.Depends(target, "../lib/libbputils.so")
+
+for target in tests.run("test_script.py"):
+    env.Depends(target, testLib)
+    env.Depends(target, "../lib/libbputils.so")

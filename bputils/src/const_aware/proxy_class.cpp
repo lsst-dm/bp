@@ -8,6 +8,12 @@
 #include <boost/python/const_aware/proxy_class.hpp>
 #include <structmember.h>
 
+#if PY_VERSION_HEX < 0x02060000
+#define Py_TYPE(o) ((o)->ob_type)
+#define PyVarObject_HEAD_INIT(type, size)       \
+    PyObject_HEAD_INIT(type) size,
+#endif
+
 // Most of this is copied with minor modifications from object/class.cpp in the main Boost.Python library.
 
 namespace boost { namespace python { namespace const_aware { 

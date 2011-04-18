@@ -1,0 +1,6 @@
+setupRequired(scons bp)
+setupOptional(ipython 0.10.2+jb0)
+setupRequired(base bp)
+setupRequired(bputils bp)
+setupRequired(pex_exceptions bp)
+setupRequired(utils bp)

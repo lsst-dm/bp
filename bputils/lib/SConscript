@@ -4,4 +4,4 @@ import os
 
 env.SharedLibrary('bputils', 
                   Glob("../src/*.cc") + Glob("../src/numpy/*.cpp") + Glob("../src/const_aware/*.cpp"), 
-                  LIBS=env.getpylibs("python boost_python numpy"))
+                  LIBS=env.getLibs("self python"))

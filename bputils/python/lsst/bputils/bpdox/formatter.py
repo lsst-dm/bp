@@ -25,7 +25,7 @@ class Formatter(object):
     templates = {
         "ClassWrapper": '{bp}::class_< {args} >', 
         "ClassDeclaration": \
-            '{wrapper} {variable}(\n{indent1}"{name}",\n{indent1}{init},\n{indent1}{doc}\n{indent0})',
+            '{wrapper}{variable}(\n{indent1}"{name}",\n{indent1}{doc},\n{indent1}{init}\n{indent0})',
         "InitVisitor0": '{bp}::init<>(\n{indent1}{doc}\n{indent0})',
         "InitVisitorN": '{bp}::init< {param_types} >(\n{indent1}{keyword_args},\n{indent1}{doc}\n{indent0})',
         "KeywordArg": '{bp}::arg("{name}"){default}',
@@ -62,11 +62,11 @@ class Formatter(object):
         """
         lines = []
         if target.brief.strip():
-            lines.append(textwrap.fill(target.brief, width=self.docwidth))
+            lines.extend(textwrap.wrap(target.brief, width=self.docwidth))
         if hasattr(target, "params") and target.params:
             name_width = 0
             for param in target.params:
-                if param.brief and len(param.name) > name_width:
+                if param.name and param.brief and len(param.name) > name_width:
                     name_width = len(param.name)
             if name_width > 0:
                 lines.append("")
@@ -77,7 +77,7 @@ class Formatter(object):
                     width=self.docwidth
                     )
                 for param in target.params:
-                    if len(param.name) == 0: continue
+                    if not param.name or len(param.name) == 0: continue
                     sep = "-" * (name_width + 1 - len(param.name))
                     lines.extend(
                         wrapper.wrap(
@@ -87,7 +87,7 @@ class Formatter(object):
                         )
         if target.detailed.strip():
             lines.append("")
-            lines.append(textwrap.fill(target.detailed, width=self.docwidth))
+            lines.extend(textwrap.wrap(target.detailed, width=self.docwidth))
         if not lines:
             return '""'
         template = '{indent}"{line}\\n"'
@@ -146,6 +146,10 @@ class Formatter(object):
         """
         if templates is None: templates = self.templates
         if name is None: name = formatName(target, scope=scope)
+        if variable is not None:
+            variable = " " + variable
+        else:
+            variable = ""
         indent1 = indent + self.indent
         if doc is None:
             doc = self.getDocumentation(target, scope, templates=templates, indent=indent1, **kw)

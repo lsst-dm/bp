@@ -62,7 +62,7 @@ class Class(Target):
             bases.append(base)
         self.bases = tuple(bases)
         self.is_template = (xml.find("templateparamlist") != None)
-       
+
 class Callable(Target):
 
     def parseParameters(self, xml, index):
@@ -75,6 +75,9 @@ class Callable(Target):
                 default=param_xml.findtext("defval"),
                 brief=self.parseParagraphs(param_xml.find("briefdescription"), index)
                 )
+            if param.name is None:
+                if param.cxxtype.template.strip() == "void":
+                    continue
             params.append(param)
         self.is_template = (xml.find("templateparamlist") != None)
         return tuple(params)

@@ -51,6 +51,8 @@ SUPPORTED MACROS
 
 %%auto_class< NAME > VARIABLE(INIT)%%
 %%auto_class< NAME, noncopyable > VARIABLE(INIT)%%
+%%auto_class< NAME >(INIT)%%
+%%auto_class< NAME, noncopyable >(INIT)%%
    Generate a boost::python::class_ declaration for class NAME with
    Python name, docstring, and bases determined automatically.
    VARIABLE is the name of the new C++ variable created by this
@@ -93,7 +95,7 @@ SUPPORTED MACROS
 import lsst.bputils.bpdox
 import sys
 
-verbose = False
+verbose = True
 
 if __name__ == "__main__":
     if verbose:

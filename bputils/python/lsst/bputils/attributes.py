@@ -108,6 +108,8 @@ def rescope(source, scope, names=None, ignore=None):
     If names is None, ignore will be a list of names not to import; those that begin with an
     underscore are always skipped.
     """
+    if ignore is None:
+        ignore = ()
     if names is None:
         names = [name for name in dir(source) if name not in ignore and not name.startswith("_")]
     for name in names:

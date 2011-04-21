@@ -45,6 +45,7 @@ struct container_from_python_sequence {
             return obj;
         } catch (error_already_set & err) {
             handle_exception();
+            PyErr_Clear();
             return NULL;
         }
     }

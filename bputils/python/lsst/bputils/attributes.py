@@ -114,6 +114,9 @@ def rescope(source, scope, names=None, ignore=None):
         names = [name for name in dir(source) if name not in ignore and not name.startswith("_")]
     for name in names:
         obj = getattr(source, name)
-        obj.__module__ = scope['__name__']
+        try: # this is settable for classes, but not free functions
+            obj.__module__ = scope['__name__']
+        except AttributeError:
+            pass
         scope[name] = obj
 

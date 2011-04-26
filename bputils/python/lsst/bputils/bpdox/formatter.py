@@ -2,6 +2,11 @@ import targets
 import lookup
 import textwrap
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 def formatName(obj, scope=(), delimiter="::"):
     if hasattr(obj, "name"):
         n = 0
@@ -19,6 +24,22 @@ def formatType(obj, scope=()):
     else:
         dictionary = obj.dictionary
     return obj.template.format(**dictionary)
+
+def formatCode(xml):
+    """Format a doxygen XML "programlisting" node as plain text."""
+    lines = []
+    for codeline in xml.findall("codeline"):
+        buf = StringIO()
+        for highlight in codeline.findall("highlight"):
+            if highlight.text:
+                buf.write(highlight.text)
+            for child in highlight:
+                if child.text: buf.write(child.text)
+                if child.tag == "sp":
+                    buf.write(" ")
+                if child.tail: buf.write(child.tail)
+        lines.append(buf.getvalue())
+    return lines
 
 class Formatter(object):
 
@@ -61,15 +82,19 @@ class Formatter(object):
           templates------ Dictionary of format strings to use (default is self.templates).
         """
         lines = []
-        if target.brief.strip():
-            lines.extend(textwrap.wrap(target.brief, width=self.docwidth))
+        if target.brief:
+            for item in target.brief:
+                if hasattr(item, "tag"):
+                    lines.extend(formatCode(item))
+                else:
+                    lines.extend(textwrap.wrap(item, width=self.docwidth))
+                lines.append("")
         if hasattr(target, "params") and target.params:
             name_width = 0
             for param in target.params:
                 if param.name and param.brief and len(param.name) > name_width:
                     name_width = len(param.name)
             if name_width > 0:
-                lines.append("")
                 lines.append("Arguments:")
                 wrapper = textwrap.TextWrapper(
                     initial_indent="  ",
@@ -79,17 +104,30 @@ class Formatter(object):
                 for param in target.params:
                     if not param.name or len(param.name) == 0: continue
                     sep = "-" * (name_width + 1 - len(param.name))
-                    lines.extend(
-                        wrapper.wrap(
-                            "{name} {sep} {descr}".format(
-                                name=param.name, sep=sep, descr=param.brief)
+                    if param.brief:
+                        lines.extend(
+                            wrapper.wrap(
+                                "{name} {sep} {descr}".format(
+                                    name=param.name, sep=sep, descr=param.brief[0])
+                                )
                             )
-                        )
-        if target.detailed.strip():
-            lines.append("")
-            lines.extend(textwrap.wrap(target.detailed, width=self.docwidth))
+                    if len(param.brief) > 1:
+                        for item in param.brief[1:]:
+                            if hasattr(item, "tag"):
+                                lines.extend(formatCode(item))
+                            else:
+                                lines.extend(textwrap.wrap(item, width=self.docwidth))
+                lines.append("")
+        if target.detailed:
+            for item in target.detailed:
+                if hasattr(item, "tag"):
+                    lines.extend(formatCode(item))
+                else:
+                    lines.extend(textwrap.wrap(item, width=self.docwidth))
+                lines.append("")
         if not lines:
             return '""'
+        lines = [line.replace('"', r'\"') for line in lines]
         template = '{indent}"{line}\\n"'
         return "\n".join(
             [template.format(indent="", line=lines[0])] 
@@ -181,7 +219,7 @@ class Formatter(object):
         terms = []
         for param in target.params:
             if param.default is not None:
-                default = "={0}".format(param.default)
+                default = "={0}".format(formatType(param.default, scope=scope))
             else:
                 default = ""
             terms.append(templates["KeywordArg"].format(bp=self.bp, name=param.name, default=default, **kw))

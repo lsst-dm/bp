@@ -1,6 +1,3 @@
-import weakref
-from xml.etree.ElementTree import tostring
-
 class Target(object):
     """A base class for target nodes in the Doxygen XML.
 
@@ -31,10 +28,16 @@ class Target(object):
                                     param.direction = parametername.get("direction")
                                     param.brief = description
                                     break
-                if child.text is not None: terms.append(child.text)
-                if child.tail is not None: terms.append(child.tail)
+                elif child.tag == "programlisting":
+                    paragraphs.append("".join(terms))
+                    paragraphs.append(child)
+                    terms = []
+                elif child.text is not None:
+                    terms.append(child.text)
+                if child.tail is not None:
+                    terms.append(child.tail)
             paragraphs.append("".join(terms))
-        return "\n\n".join(paragraphs).strip()
+        return paragraphs
 
     def __init__(self, xml, index, name):
         self.brief = self.parseParagraphs(xml.find("briefdescription"), index)
@@ -69,10 +72,15 @@ class Callable(Target):
         params = []
         for param_xml in xml.findall("param"):
             type_xml = param_xml.find("type")
+            default_xml = param_xml.find("defval")
+            if default_xml is not None:
+                default = CxxType(default_xml, index)
+            else:
+                default = None
             param = Parameter(
                 name=param_xml.findtext("declname"),
                 cxxtype=CxxType(type_xml, index),
-                default=param_xml.findtext("defval"),
+                default=default,
                 brief=self.parseParagraphs(param_xml.find("briefdescription"), index)
                 )
             if param.name is None:

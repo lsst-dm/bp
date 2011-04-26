@@ -1,4 +1,7 @@
-import xml.etree.ElementTree
+try:
+    import xml.etree.cElementTree as ElementTree
+except ImportError:
+    import xml.etree.ElementTree as ElementTree
 import targets
 import os
 import logging
@@ -35,7 +38,7 @@ class CompoundNode(Node):
             return
         if __debug__:
             logging.debug("Parsing xml target file '{0}'".format(self.xmlfile))
-        xml_root = xml.etree.ElementTree.parse(self.xmlfile).getroot()
+        xml_root = ElementTree.parse(self.xmlfile).getroot()
         for compound_xml in xml_root.findall("compounddef"):
             refid = compound_xml.get("id")
             compound_node = index.by_refid[refid]
@@ -94,7 +97,7 @@ class Index(object):
         for path in paths:
             xmlfile = os.path.join(path, "index.xml")
             logging.debug("Parsing xml index file '{0}'.".format(xmlfile))
-            root_xml = xml.etree.ElementTree.parse(xmlfile).getroot()
+            root_xml = ElementTree.parse(xmlfile).getroot()
             for compound_xml in root_xml.findall("compound"):
                 compound_node = CompoundNode(
                     name=tuple(compound_xml.findtext("name").split("::")),

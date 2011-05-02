@@ -95,7 +95,7 @@ SUPPORTED MACROS
 import lsst.bputils.bpdox
 import sys
 
-verbose = True
+verbose = False
 
 if __name__ == "__main__":
     if verbose:
@@ -108,9 +108,15 @@ if __name__ == "__main__":
         lsst.bputils.bpdox.main(*sys.argv[1:])
     except Exception, err:
         if verbose:
-            import traceback
-            message = traceback.format_exc()
+            if len(err.args[0]) > 1:
+                message = err.args[0][1] + err.args[0][0] + "\n";
+            else:
+                import traceback
+                message = traceback.format_exc()
         else:
-            message = err.args[0] + "\n"
+            if len(err.args[0]) > 1:
+                message = err.args[0][0] + "\n";
+            else:
+                message = err.args[0] + "\n"
         sys.stderr.write(message)
         sys.exit(1)

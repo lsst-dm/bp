@@ -32,8 +32,6 @@ def main(*args):
     target = args[0]
     basetarget, garbage = os.path.splitext(target)
     paths = expandPaths(args[1:])
-    for path in paths:
-        print "Using Doxygen XML output in {0}".format(path)
     index = Index(paths)
     formatter = Formatter()
     generator = Generator(formatter, index)

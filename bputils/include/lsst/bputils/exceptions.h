@@ -31,13 +31,15 @@ void addExceptionProxy(char const * name, boost::python::object & wrapper);
 } // namespace detail
 
 template <typename T, typename Base>
-void declareException(char const * name) {
+boost::python::class_< T, boost::python::bases<Base> >
+declareException(char const * name) {
     std::string cppName("LsstCpp");
     cppName += name;
     boost::python::class_< T, boost::python::bases<Base> > wrapper(cppName.c_str(), boost::python::no_init);
     detail::addExceptionProxy(name, wrapper);
     detail::ExceptionConverter<T>();
     boost::python::register_ptr_to_python< boost::shared_ptr<T> >();
+    return wrapper;
 }
 
 }} // namespace lsst::bputils

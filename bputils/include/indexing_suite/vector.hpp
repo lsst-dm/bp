@@ -24,7 +24,33 @@
 #include <indexing_suite/algorithms.hpp>
 #include <vector>
 
-namespace boost { namespace python { namespace indexing {
+namespace boost { namespace python {
+
+// Overloads to make std::vector<bool> specialization work.
+
+template <>
+struct to_python_value< std::vector<bool>::reference const & > : public detail::builtin_to_python {
+    inline PyObject * operator()(std::vector<bool>::reference const & x) const {
+        return PyBool_FromLong(bool(x));
+    }
+    inline PyTypeObject const * get_pytype() const {
+        return &PyBool_Type;
+    }
+};
+
+namespace converter {
+
+template <>
+struct arg_to_python< std::vector<bool>::reference > : public handle<> {
+    inline arg_to_python(std::vector<bool>::reference v) :
+        handle<>(to_python_value<std::vector<bool>::reference const &>()(v)) {}
+};
+
+} // namespace converter
+
+
+
+namespace indexing {
 #if !defined(BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
   namespace detail {
     ///////////////////////////////////////////////////////////////////////

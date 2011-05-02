@@ -1,6 +1,7 @@
 import re
 import sys
 from . import formatter
+from . import lookup
 
 class Generator(object):
 
@@ -8,7 +9,7 @@ class Generator(object):
     scope_regex = re.compile(r"\s*\(\s*(?P<name>(\w+::)*\w+)\s*\)\s*")
     in_class_regex = re.compile(r"\s*\(\s*(?P<name>(\w+::)*\w+)\s*\)\s*(?P<tparams><.*?>)?\s*")
     doc_regex = re.compile(
-        r"\s*\(\s*(?P<name>(\w+::)*\w+)(\[(?P<index>\d+)\])?\s*\)\s*"
+        r"\s*\(\s*(?P<name>(\w+::)*\w+)\s*(\[(?P<label>\w+)\])?\s*\)\s*"
         )
     auto_class_regex = re.compile(
         r"\s*<\s*(?P<name>(\w+::)*\w+)\s*(?P<tparams><.*?>)?\s*(,\s*(?P<nc>(boost::)?noncopyable))?\s*>"
@@ -16,35 +17,12 @@ class Generator(object):
         )
     auto_method_regex = re.compile(
         r"\s*\((?P<name>(\w+::)*\w+)"
-        r"((\[(?P<start>\d+)?:(?P<stop>\d+)?\])|(\[(?P<index>\d+)\]))?"
+        r"(\[(?P<labels>\s*\w+\s*(,\s*\w+\s*)*)\])?"
         r"(\s*,\s*(?P<policies>.*))?\s*\)\s*"
         )
     auto_function_regex = auto_method_regex
-    auto_init_regex = re.compile(
-        r"\s*((\[(?P<start>\d+)?:(?P<stop>\d+)?\])|(\[(?P<index>\d+)\]))?\s*"
-        )
-    auto_enum_regex = re.compile(r"\s*\((?P<name>(\w+::)*\w+)(\s*,\s*(?P<tscope>\S.+\S))?\s*\)")
-
-    @staticmethod
-    def subscript(sequence, match):
-        start = match.group("start")
-        stop = match.group("stop")
-        index = match.group("index")
-        if index is not None:
-            index = int(index)
-            return sequence[index:index+1]
-        elif start is not None:
-            start = int(start)
-            if stop is not None:
-                stop = int(stop)
-                return sequence[start:stop]
-            else:
-                return sequence[start:]
-        elif stop is not None:
-            stop = int(stop)
-            return sequence[:stop]
-        return sequence
-        
+    auto_init_regex = re.compile(r"\s*(\[(?P<labels>\s*\w+\s*(,\s*\w+\s*)*)\])?\s*")
+    auto_enum_regex = re.compile(r"\s*\((?P<name>(\w+::)*\w+)(\s*,\s*(?P<tscope>\S.+\S))?\s*\)")        
 
     def __init__(self, formatter, index):
         self.formatter = formatter
@@ -81,7 +59,8 @@ class Generator(object):
                 try:
                     macro_output = method(macro_match.group("body"), indent=(" " * start))
                 except Exception, err:
-                    newErr = type(err)("{0} (line {1})".format(err.args[0], n+1))
+                    import traceback
+                    newErr = type(err)(("{0} (line {1})".format(err.args[0], n+1), traceback.format_exc()))
                     raise newErr
                 if head:
                     output.write(head)
@@ -101,18 +80,12 @@ class Generator(object):
         if not match:
             raise SyntaxError("Error parsing %%doc%% argument.")
         node = self.index.lookup(match.group("name").split("::"), scope=self._scope)
-        if type(node) is list:
-            if match.group("index") is None:
-                if len(node) != 1:
-                    print [a.target for a in node]
-                    raise SyntaxError("Multiple overloads for %%doc%% macro call.")
-                node = node[0]
+        if isinstance(node, lookup.OverloadSet):
+            label = match.group("label")
+            if label is None:
+                node = node.get()
             else:
-                n = int(match.group("index"))
-                node = node[n]
-        else:
-            if match.group("index") is not None:
-                raise SyntaxError("%%doc%% macro does not support indexing for non-members")
+                node = node.findone(label)
         return self.formatter.getDocumentation(node.target, scope=self._scope, indent=indent)
 
     def m_in_class(self, body, indent):
@@ -151,10 +124,12 @@ class Generator(object):
         if self._class_tparams:
             class_type += self._class_tparams
         method_name = match.group("name").split("::")
-        sequence = self.subscript(
-            self.index.lookup(method_name, scope=self._class.name),
-            match
-            )
+        overloads = self.index.lookup(method_name, scope=self._class.name)
+        if match.group("labels"):
+            labels = [label.strip() for label in match.group("labels").split(",")]
+            sequence = overloads.findmany(labels)
+        else:
+            sequence = overloads
         results = []
         is_static = False
         for node in sequence:
@@ -172,6 +147,8 @@ class Generator(object):
                     name=formatter.formatName(method_name[-1], scope=self._class.name)
                     )
                 )
+        if len(results) == 0:
+            raise LookupError("Empty macro result.")
         return "\n{indent}.".format(indent=indent).join(results)
 
     def m_auto_init(self, body, indent):
@@ -180,15 +157,19 @@ class Generator(object):
         match = self.auto_init_regex.match(body)
         if not match:
             raise SyntaxError("Error parsing auto_method argument.")
-        sequence = self.subscript(
-            self.index.lookup(self._class.name + self._class.name[-1:], scope=self._class.name),
-            match
-            )
+        overloads = self.index.lookup(self._class.name + self._class.name[-1:], scope=self._class.name)
+        if match.group("labels"):
+            labels = [label.strip() for label in match.group("labels").split(",")]
+            sequence = overloads.findmany(labels)
+        else:
+            sequence = overloads
         results = []
         for node in sequence:
             results.append(
                 self.formatter.getInitDeclaration(node.target, scope=self._scope, indent=indent)
                 )
+        if len(results) == 0:
+            raise LookupError("Empty macro result.")
         return "\n{indent}.".format(indent=indent).join(results)
 
     def m_auto_function(self, body, indent):
@@ -196,7 +177,12 @@ class Generator(object):
         if not match:
             raise SyntaxError("Error parsing auto_function argument.".format(n=n))
         function_name = match.group("name").split("::")
-        sequence = self.subscript(self.index.lookup(function_name, scope=self._scope), match)
+        overloads = self.index.lookup(function_name, scope=self._scope)
+        if match.group("labels"):
+            labels = [label.strip() for label in match.group("labels").split(",")]
+            sequence = overloads.findmany(labels)
+        else:
+            sequence = overloads
         results = []
         for node in sequence:
             results.append(
@@ -205,6 +191,8 @@ class Generator(object):
                     call_policies=match.group("policies")
                     )
                 )
+        if len(results) == 0:
+            raise LookupError("Empty macro result.")
         return "\n{indent}.".format(indent=indent).join(results)
 
     def m_auto_enum(self, body, indent):
@@ -213,8 +201,8 @@ class Generator(object):
             raise SyntaxError("Error parsing auto_enum argument.")
         enum_name = match.group("name").split("::")
         node = self.index.lookup(enum_name, scope=self._scope)
-        if isinstance(node, list):
-            node = node[0]
+        if isinstance(node, lookup.OverloadSet):
+            node = node.get()
         return self.formatter.getEnum(
             node.target, scope=self._scope, tscope=match.group("tscope"), indent=indent
             )

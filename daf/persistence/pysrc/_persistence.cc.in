@@ -1,0 +1,174 @@
+#include <boost/python.hpp>
+#include "boost/python/const_aware.hpp"
+#include "boost/python/to_python/copy_to_tuple.hpp"
+#include "boost/python/from_python/container.hpp"
+#include <sstream>
+#include <boost/scoped_ptr.hpp>
+
+#include "lsst/daf/persistence.h"
+#include "lsst/bputils/exceptions.h"
+
+namespace bp = boost::python;
+
+namespace lsst { namespace daf { namespace persistence { %%scope(lsst::daf::persistence)%%
+
+namespace {
+
+struct PyDbAuth {
+
+    static void declare() {
+        %%auto_class<DbAuth>%%
+            .%%auto_method(setPolicy)%%
+            .%%auto_method(available)%%
+            .%%auto_method(authString)%%
+            .%%auto_method(username)%%
+            .%%auto_method(password)%%
+            ;
+    }
+
+};
+
+struct PyLogicalLocation {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<LogicalLocation>%%
+        );
+        wrapper.main_class()
+            .%%auto_init%%
+            ;
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_method(locString, bp::return_value_policy<bp::copy_const_reference>())%%
+            .%%auto_method(setLocationMap)%%
+            ;
+    }
+
+};
+
+struct PyStorage {
+
+    static void declare() {
+        bp::container_from_python_sequence<Storage::List>();
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<Storage,noncopyable>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_method(setPolicy)%%
+            .%%auto_method(setPersistLocation)%%
+            .%%auto_method(setRetrieveLocation)%%
+            .%%auto_method(startTransaction)%%
+            .%%auto_method(endTransaction)%%
+            .%%auto_method(createInstance)%%
+            ;
+    }
+
+};
+
+struct PyDbStorage {
+
+    template <typename T, typename Wrapper>
+    static void declareTemplates(Wrapper & wrapper, std::string const & name) {
+        wrapper.def(
+            ("setColumn" + name).c_str(), &DbStorage::setColumn<T>,
+            (bp::arg("columnName"), bp::arg("value")),
+            %%doc(DbStorage::setColumn)%%
+        );
+        wrapper.def(
+            ("condParam" + name).c_str(), &DbStorage::condParam<T>,
+            (bp::arg("paramName"), bp::arg("value")),
+            %%doc(DbStorage::condParam)%%
+        );
+        wrapper.def(
+            ("getColumnByPos" + name).c_str(), &DbStorage::getColumnByPos<T>,
+            bp::arg("pos"), bp::return_value_policy< bp::copy_const_reference >(),
+            %%doc(DbStorage::getColumnByPos)%%
+        );
+    }
+
+    static void declare() {
+        bp::container_from_python_sequence< std::vector<std::string> >();
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<DbStorage,noncopyable>(bp::init<>())%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_method(createTableFromTemplate)%%
+            .%%auto_method(dropTable)%%
+            .%%auto_method(truncateTable)%%
+            .%%auto_method(executeSql)%%
+            .%%auto_method(setTableForInsert)%%
+            .%%auto_method(setColumnToNull)%%
+            .%%auto_method(insertRow)%%
+            .%%auto_method(setTableForQuery)%%
+            .%%auto_method(setTableListForQuery)%%
+            .%%auto_method(outColumn)%%
+            .%%auto_method(orderBy)%%
+            .%%auto_method(groupBy)%%
+            .%%auto_method(setQueryWhere)%%
+            .%%auto_method(query)%%
+            .%%auto_method(next)%%
+            .%%auto_method(columnIsNull)%%
+            .%%auto_method(finishQuery)%%
+            ;
+        declareTemplates<char>(wrapper, "Char");
+        declareTemplates<short>(wrapper, "Short");
+        declareTemplates<int>(wrapper, "Int");
+        declareTemplates<long>(wrapper, "Long");
+        declareTemplates<long long>(wrapper, "Int64");
+        declareTemplates<float>(wrapper, "Float");
+        declareTemplates<double>(wrapper, "Double");
+        declareTemplates<std::string>(wrapper, "String");
+        declareTemplates<bool>(wrapper, "Bool");
+    }
+
+};
+
+struct PyDbTsvStorage {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<DbTsvStorage,noncopyable>(bp::init<>())%%
+        );
+        wrapper.enable_shared_ptr();
+    }
+
+};
+
+struct PyPersistence {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<Persistence,noncopyable>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_method(getPersistStorage)%%
+            .%%auto_method(getRetrieveStorage)%%
+            .%%auto_method(persist)%%
+            .%%auto_method(retrieve)%%
+            .%%auto_method(unsafeRetrieve, bp::return_value_policy<bp::manage_new_object>())%%
+            .%%auto_method(getPersistence)%%
+            ;
+    }
+
+};
+
+void declarePersistence() {
+    PyDbAuth::declare();
+    PyLogicalLocation::declare();
+    PyStorage::declare();
+    PyDbStorage::declare();
+    PyDbTsvStorage::declare();
+    PyPersistence::declare();
+}
+
+} // anonymous
+
+}}} // namespace lsst::daf::persistence
+
+BOOST_PYTHON_MODULE(_persistence) {
+    bp::import("lsst.daf.base");
+    lsst::daf::persistence::declarePersistence();
+}

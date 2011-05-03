@@ -210,8 +210,14 @@ class CxxType(object):
         for child_xml in xml:
             if child_xml.tag == "ref":
                 refid = child_xml.get("refid")
-                self.dictionary[refid] = index.by_refid[refid]
-                terms.append("".join(("{", refid, "}")))
+                try:
+                    self.dictionary[refid] = index.by_refid[refid]
+                    terms.append("".join(("{", refid, "}")))
+                except KeyError:
+                    logging.warning("Could not resolve '{0}' - scope may be incorrect (include "
+                                    "additional xml directories to resolve this problem)"
+                                    ".".format(child_xml.text))
+                    terms.append(child_xml.text)
             else:
                 add_text(child_xml.text)
             add_text(child_xml.tail)

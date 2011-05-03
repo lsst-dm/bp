@@ -1,0 +1,8 @@
+# -*- python -*-
+Import("env")
+
+src = env.BPDox("#pysrc/_persistence.cc.in", "daf_base", "pex_policy")
+
+env.Depends(src, "#doc/xml/daf_persistence")
+
+env.LoadableModuleIncomplete("_persistence", src, LIBS=env.getLibs("main python"))

@@ -10,14 +10,15 @@ packages = [
     ("daf/base", "daf_base"),
     ("pex/logging", "pex_logging"),
     ("pex/policy", "pex_policy"),
+    ("daf/persistence", "daf_persistence"),
     ]
 
 def main(args):
     cmd = args[0]
     if cmd == "declare":
-        template = "eups declare --force -r {path} {name} {bp}"
+        template = "eups declare --force -r %s %s bp"
         for path, name in packages:
-            s = template.format(path=path, name=name)
+            s = template % (path, name)
             print s
             if os.system(s) != 0:
                 sys.exit(1)
@@ -28,7 +29,7 @@ def main(args):
             scons += " --clean"
         for path, name in packages:
             abspath = os.path.join(root, path)
-            print "cd {0}".format(abspath)
+            print "cd %s" % abspath
             os.chdir(abspath)
             print scons
             if os.system(scons) != 0:

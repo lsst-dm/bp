@@ -94,13 +94,15 @@ SUPPORTED MACROS
 
 import lsst.bputils.bpdox
 import sys
+import logging
 
 verbose = False
 
 if __name__ == "__main__":
     if verbose:
-        import logging
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
+    else:
+        logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.WARNING)
     if sys.argv[1] == "help":
         print __doc__
         sys.exit(0)

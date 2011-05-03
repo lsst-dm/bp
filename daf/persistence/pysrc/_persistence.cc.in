@@ -1,9 +1,6 @@
 #include <boost/python.hpp>
 #include "boost/python/const_aware.hpp"
-#include "boost/python/to_python/copy_to_tuple.hpp"
 #include "boost/python/from_python/container.hpp"
-#include <sstream>
-#include <boost/scoped_ptr.hpp>
 
 #include "lsst/daf/persistence.h"
 #include "lsst/bputils/exceptions.h"

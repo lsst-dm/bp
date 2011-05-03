@@ -11,6 +11,7 @@ packages = [
     ("pex/logging", "pex_logging"),
     ("pex/policy", "pex_policy"),
     ("daf/persistence", "daf_persistence"),
+    ("security", "security"),
     ]
 
 def main(args):

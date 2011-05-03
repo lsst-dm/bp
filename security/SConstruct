@@ -1,0 +1,37 @@
+# -*- python -*-
+#
+# Setup our environment
+#
+import os.path
+import lsst.scons.SConsUtils as scons
+
+env = scons.makeEnv("security",
+                    r"$HeadURL$",
+                    scons.ConfigureDependentProducts("security"))
+
+env.Append(CXXFLAGS="-std=c++0x")
+
+#
+# Build/install things
+#
+for d in Split("lib python/lsst/security doc"):
+    SConscript(os.path.join(d, "SConscript"))
+
+env['IgnoreFiles'] = r"(~$|\.pyc$|^\.svn$|\.o$)"
+
+env.InstallLSST(env['prefix'], ['doc', 'etc', 'include', 'python'])
+
+scons.CleanTree(r"*~ core *.so *.os *.o")
+
+#
+# Build TAGS files
+#
+files = scons.filesToTag()
+if files:
+    env.Command("TAGS", files, "etags -o $TARGET $SOURCES")
+
+env.Declare()
+env.Help("""
+LSST Security package
+""")
+

@@ -1,0 +1,10 @@
+bputils:
+utils:
+"utils", "lsst/utils/Demangle.h", "utils:C++"
+pex_exceptions:
+"pex_exceptions", "lsst/pex/exceptions.h", "pex_exceptions:C++"
+daf_base:
+"daf_base", "lsst/daf/base.h", "daf_base:C++"
+pex_logging:
+"pex_logging", "lsst/pex/logging/Trace.h", "pex_logging:C++"
+"boost_filesystem", "boost/version.hpp", "boost_filesystem:C++"

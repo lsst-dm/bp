@@ -1,0 +1,35 @@
+#include <boost/python.hpp>
+#include "boost/python/const_aware.hpp"
+
+#include "lsst/security/Security.h"
+
+namespace bp = boost::python;
+
+namespace lsst { namespace security { %%scope(lsst::security)%%
+
+namespace {
+
+struct PySecurity {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<Security>%%
+        );
+        wrapper.main_class()
+            .%%auto_init%%
+            ;
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_method(toString)%%
+            ;
+    }
+
+};
+
+} // anonymous
+
+}} // namespace lsst::security
+
+BOOST_PYTHON_MODULE(_security) {
+    lsst::security::PySecurity::declare();
+}

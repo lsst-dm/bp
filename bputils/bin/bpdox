@@ -92,8 +92,15 @@ SUPPORTED MACROS
 
 """
 
-import lsst.bputils.bpdox
 import sys
+import os
+try:
+    import lsst.bputils.bpdox
+except ImportError:
+    bin_paths = __file__.split("/")
+    mod_paths = bin_paths[:-2] + ["python"]
+    sys.path.append("/".join(mod_paths))
+    import lsst.bputils.bpdox
 import logging
 
 verbose = False

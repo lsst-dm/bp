@@ -1,0 +1,6 @@
+# -*- python -*-
+Import("env")
+
+src = env.BPDox("#pysrc/_data.cc.in", "daf_base", "daf_persistence", "security", "pex_policy")
+
+env.LoadableModuleIncomplete("_data", src, LIBS=env.getLibs("main python"))

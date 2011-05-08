@@ -15,12 +15,9 @@ struct PySecurity {
         auto wrapper = bp::make_const_aware(
             %%auto_class<Security>%%
         );
-        wrapper.main_class()
-            .%%auto_init%%
-            ;
         wrapper
             .enable_shared_ptr()
-            .%%auto_method(toString)%%
+            .%%auto_members_regex(.*)%%
             ;
     }
 

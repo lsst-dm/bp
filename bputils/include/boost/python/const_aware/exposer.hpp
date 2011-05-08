@@ -11,6 +11,7 @@
 #include <boost/python/const_aware/proxy_class.hpp>
 #include <boost/python/const_aware/const_shared_ptr_to_python.hpp>
 #include <boost/python/const_aware/shared_ptr_from_proxy.hpp>
+#include <boost/python/const_aware/data_members.hpp>
 #include <boost/function_types/parameter_types.hpp>
 #include <boost/mpl/front.hpp>
 #include <boost/type_traits/is_const.hpp>
@@ -91,11 +92,32 @@ public: // miscellaneous
 
 public: // member functions
 
+    // Constructors
+    template <typename Derived>
+    self & def(init_base<Derived> const & visitor) {
+        m_class.def(visitor);
+        return *this;
+    }
+
+    // Const-aware static data members
+    template <typename T>
+    self & def(static_data_member_visitor<T> const & visitor) {
+        visitor.visit(*this);
+        return *this;
+    }
+
+    // Const-aware data members
+    template <typename C, typename T>
+    self & def(data_member_visitor<C,T> const & visitor) {
+        visitor.visit(*this);
+        return *this;
+    }
+
     // Wrap a member function or a non-member function which can take
     // a T, T cv&, or T cv* as its first parameter, a callable
     // python object, or a generic visitor.
     template <class F>
-    self& def(char const* name, F f)
+    self & def(char const* name, F f)
     {
         this->def_impl(
             detail::unwrap_wrapper((W*)0)
@@ -104,14 +126,14 @@ public: // member functions
     }
 
     template <class A1, class A2>
-    self& def(char const* name, A1 a1, A2 const& a2)
+    self & def(char const* name, A1 a1, A2 const& a2)
     {
         this->def_maybe_overloads(name, a1, a2, &a2);
         return *this;
     }
 
     template <class Fn, class A1, class A2>
-    self& def(char const* name, Fn fn, A1 const& a1, A2 const& a2)
+    self & def(char const* name, Fn fn, A1 const& a1, A2 const& a2)
     {
         //  The arguments are definitely:
         //      def(name, function, policy, doc_string)
@@ -127,7 +149,7 @@ public: // member functions
     }
 
     template <class Fn, class A1, class A2, class A3>
-    self& def(char const* name, Fn fn, A1 const& a1, A2 const& a2, A3 const& a3)
+    self & def(char const* name, Fn fn, A1 const& a1, A2 const& a2, A3 const& a3)
     {
         this->def_impl(
             detail::unwrap_wrapper((W*)0)
@@ -184,6 +206,28 @@ public: // data members
 
     self & staticmethod(char const* name) {
         m_class.staticmethod(name);
+        m_proxy.setattr(name, m_class.attr("__dict__")[name]);
+        return *this;
+    }
+
+    template <class Get>
+    self & add_static_property(char const* name, Get fget) {
+        m_class.add_static_property(name, fget);
+        m_proxy.setattr(name, m_class.attr("__dict__")[name]);
+        return *this;
+    }
+
+    template <class Get, class Set>
+    self & add_static_property(char const* name, Get fget, Set fset)
+    {
+        m_class.add_static_property(name, fget, fset);
+        m_proxy.setattr(name, m_class.attr("__dict__")[name]);
+        return *this;
+    }
+
+    template <class U>
+    self & setattr(char const* name, U const& x) {
+        m_class.setattr(name, x);
         m_proxy.setattr(name, m_class.attr(name));
         return *this;
     }

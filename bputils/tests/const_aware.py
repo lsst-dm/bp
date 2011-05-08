@@ -8,6 +8,18 @@ class TestConstAware(unittest.TestCase):
 
     def setUp(self):
         self.owner = const_aware_mod.Owner()
+        self.non_const_owner = const_aware_mod.ConstAwareOwner()
+        self.const_owner = const_aware_mod.ConstAwareOwner.__const_proxy__(self.non_const_owner)
+
+    def checkStaticMembers(self, x):
+        self.assertEqual(x.static_value, 2.0)
+        self.assertEqual(x.static_const_value, 3.0)
+        x.static_value = 4.0
+        self.assert_(x.compare_static_value(4.0))
+        x.static_value = 2.0
+        def set_static_const_value():
+            x.static_const_value = 5.0
+        self.assertRaises(AttributeError, set_static_const_value)
 
     def checkNonConst(self, x):
         self.assertEqual(type(x), const_aware_mod.Example)        
@@ -34,6 +46,7 @@ class TestConstAware(unittest.TestCase):
         def set_value_ro(v):
             x.value_ro = v
         self.assertRaises(AttributeError, set_value_ro, 1)
+        self.checkStaticMembers(x)
 
     def checkConst(self, x):
         self.assertEqual(type(x), const_aware_mod.Example.__const_proxy__)
@@ -57,6 +70,13 @@ class TestConstAware(unittest.TestCase):
         self.assertRaises(AttributeError, set_value_prop, 1)
         self.assertRaises(AttributeError, set_value_rw, 1)
         self.assertRaises(AttributeError, set_value_ro, 1)
+        self.checkStaticMembers(x)
+
+    def testStaticMembers(self):
+        self.checkStaticMembers(const_aware_mod.Example)
+        self.checkStaticMembers(const_aware_mod.Example.__const_proxy__)
+        self.checkStaticMembers(const_aware_mod.Owner)
+        self.checkStaticMembers(self.owner)
 
     def testByValue(self):
         by_value = self.owner.by_value()
@@ -78,6 +98,59 @@ class TestConstAware(unittest.TestCase):
         self.assertEqual(by_shared_ptr.address, by_const_shared_ptr.address)
         self.checkNonConst(by_shared_ptr)
         self.checkConst(by_const_shared_ptr)
+
+    def checkSetValue(self, owner, member):
+        new = const_aware_mod.Example()
+        address = getattr(owner, member).address
+        setattr(owner, member, new)
+        self.assertEqual(address, getattr(owner, member).address)
+
+    def checkSetPtr(self, owner, member):
+        new = const_aware_mod.Example()
+        address = new.address
+        setattr(owner, member, new)
+        self.assertEqual(address, getattr(owner, member).address)
+
+    def testDataMembers(self):
+        for owner in (self.owner, self.non_const_owner, self.const_owner):
+            self.assertEqual(owner.value_member, 2.0)
+            self.assertEqual(owner.const_value_member, 3.0)
+            self.assertRaises(AttributeError, setattr, owner, "const_value_member", 4.0)
+            self.checkConst(owner.const_example_member)
+            self.checkConst(owner.example_const_ptr_member)
+            self.checkConst(owner.const_example_const_ptr_member)
+            self.checkNonConst(owner.example_ptr_member)
+            self.checkNonConst(owner.const_example_ptr_member)
+            self.assertRaises(AttributeError, setattr, owner, 
+                              "const_example_member", const_aware_mod.Example())
+            self.assertRaises(AttributeError, setattr, owner, 
+                              "const_example_ptr_member", const_aware_mod.Example())
+            self.assertRaises(AttributeError, setattr, owner, 
+                              "const_example_const_ptr_member", const_aware_mod.Example())
+        self.assertRaises(AttributeError, setattr, self.const_owner, "value_member", 4.0)
+        self.assertRaises(AttributeError, setattr, self.const_owner,
+                          "example_member", const_aware_mod.Example())
+        self.assertRaises(AttributeError, setattr, self.const_owner,
+                          "example_ptr_member", const_aware_mod.Example())
+        self.assertRaises(AttributeError, setattr, self.const_owner,
+                          "example_const_ptr_member", const_aware_mod.Example())
+        self.assertRaises(TypeError, setattr, self.owner, "example_ptr_member",
+                          const_aware_mod.Example.__const_proxy__(const_aware_mod.Example()))
+        self.assertRaises(TypeError, setattr, self.non_const_owner, "example_ptr_member",
+                          const_aware_mod.Example.__const_proxy__(const_aware_mod.Example()))
+        self.checkConst(self.const_owner.example_member)
+        self.checkNonConst(self.owner.example_member)
+        self.checkNonConst(self.non_const_owner.example_member)
+        self.checkSetValue(self.owner, "example_member")
+        self.checkSetValue(self.non_const_owner, "example_member")
+        self.checkSetPtr(self.owner, "example_ptr_member")
+        self.checkSetPtr(self.non_const_owner, "example_ptr_member")
+        self.checkSetPtr(self.owner, "example_const_ptr_member")
+        self.checkSetPtr(self.non_const_owner, "example_const_ptr_member")
+        self.owner.value_member = 4.0
+        self.assertEqual(self.owner.value_member, 4.0)
+        self.non_const_owner.value_member = 4.0
+        self.assertEqual(self.non_const_owner.value_member, 4.0)
 
     def testConstruction(self):
         original = self.owner.by_value()

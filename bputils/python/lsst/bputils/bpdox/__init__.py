@@ -37,4 +37,12 @@ def main(*args):
     generator = Generator(formatter, index)
     input = open(target, 'r')
     output = open(basetarget, 'w')
-    generator(input, output)
+    try:
+        generator(input, output)
+    except Exception, err:
+        try:
+            os.remove(basetarget)
+        except:
+            pass
+        raise err
+

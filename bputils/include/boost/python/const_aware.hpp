@@ -6,6 +6,7 @@
 #include <boost/python/const_aware/as_const.hpp>
 #include <boost/python/const_aware/const_shared_ptr_to_python.hpp>
 #include <boost/python/const_aware/shared_ptr_from_proxy.hpp>
+#include <boost/python/const_aware/data_members.hpp>
 
 namespace boost { namespace python {
 

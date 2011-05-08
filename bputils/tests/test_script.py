@@ -1,5 +1,7 @@
 import unittest
 import test_mod
+import os
+from lsst.bputils import std
 
 class TestVector(unittest.TestCase):
 
@@ -66,6 +68,46 @@ class TestConstSharedPtr(unittest.TestCase):
     def testConstSharedPtr(self):
         v = test_mod.shared_ptr_example_class.return_const_shared_ptr()
         self.assertEqual(type(v), test_mod.shared_ptr_example_class)
+
+class TestStreams(unittest.TestCase):
+
+    def test_ofstream(self):
+        s1 = "test string 1 for ofstream"
+        s2 = "test string 2 for ofstream"
+        filename = "ofstream_test_buffer"
+        ofs = std.ofstream(filename)
+        ofs.write(s1)
+        ofs.close()
+        f = open(filename, "r")
+        self.assertEqual(s1, f.read())
+        f.close()
+        ofs = std.ofstream(filename, 'a')
+        ofs.write(s2)
+        ofs.close()
+        f = open(filename, "r")
+        self.assertEqual(s1 + s2, f.read())
+        f.close()
+        ofs = std.ofstream(filename, 'w')
+        ofs.write(s1)
+        ofs.close()
+        f = open(filename, "r")
+        self.assertEqual(s1, f.read())
+        f.close()
+        try:
+            os.remove(filename)
+        except:
+            print "WARNING: could not delete test file '%s'" % filename
+
+    def test_ostringstream(self):
+        s1 = "test string 1 for ostringstream"
+        s2 = "test string 2 for ostringstream"
+        oss = std.ostringstream()
+        oss.write(s1)
+        oss.flush()
+        self.assertEqual(oss.str(), s1)
+        oss.write(s2)
+        oss.flush()
+        self.assertEqual(oss.str(), s1 + s2)
 
 if __name__=="__main__":
     unittest.main()

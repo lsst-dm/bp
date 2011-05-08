@@ -16,7 +16,15 @@
 
 // Most of this is copied with minor modifications from object/class.cpp in the main Boost.Python library.
 
-namespace boost { namespace python { namespace const_aware { 
+namespace boost { namespace python {
+
+namespace objects {
+
+PyObject* static_data();
+
+} // namespace objects
+
+namespace const_aware { 
 
 struct proxy_instance {
     PyObject_HEAD
@@ -93,6 +101,28 @@ extern "C" {
         return PyObject_Str(self->target);
     }
 
+    // Copied verbatim from objects/class.cpp from Boost.Python proper;
+    // allows setting static properties of const proxy objects.
+    static int
+    class_setattro(PyObject *obj, PyObject *name, PyObject* value)
+    {
+        // Must use "private" Python implementation detail
+        // _PyType_Lookup instead of PyObject_GetAttr because the
+        // latter will always end up calling the descr_get function on
+        // any descriptor it finds; we need the unadulterated
+        // descriptor here.
+        PyObject* a = _PyType_Lookup(downcast<PyTypeObject>(obj), name);
+
+        // a is a borrowed reference or 0
+        
+        // If we found a static data descriptor, call it directly to
+        // force it to set the static data member
+        if (a != 0 && PyObject_IsInstance(a, objects::static_data()))
+            return Py_TYPE(a)->tp_descr_set(a, obj, value);
+        else
+            return PyType_Type.tp_setattro(obj, name, value);
+    }
+
 }  // extern "C"
 
 // Mostly copied from class_metatype_object from object/class.cpp in the main Boost.Python library.
@@ -114,7 +144,7 @@ static PyTypeObject proxy_class_metatype_object = {
     0,                                      /* tp_call */
     0,                                      /* tp_str */
     0,                                      /* tp_getattro */
-    0,                                      /* tp_setattro */
+    class_setattro,                         /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT // | Py_TPFLAGS_HAVE_GC
     | Py_TPFLAGS_BASETYPE,          /* tp_flags */
@@ -333,12 +363,24 @@ void proxy_class_base::setattr(char const* name, object const& x) {
         throw_error_already_set();
 }
 
+proxy_class & proxy_class::add_static_property(char const * name, object const & fget) {
+    object property(
+        (python::detail::new_reference) 
+        PyObject_CallFunction(objects::static_data(), const_cast<char*>("O"), fget.ptr())
+    );
+    this->setattr(name, property);
+    return *this;
+}
+
 PyObject * construct_proxy_class(PyObject * target_arg) {
     handle<> target(target_arg);
     PyTypeObject * target_type = Py_TYPE(target.get());
     PyTypeObject * proxy_type = 
         (PyTypeObject*)PyObject_GetAttrString((PyObject*)target_type, "__const_proxy__");
-    if (proxy_type == 0) return 0;
+    if (proxy_type == 0) {
+        PyErr_Clear();
+        return target.release();
+    }
     PyObject * raw_proxy = proxy_type->tp_alloc(proxy_type, 0);
     if (raw_proxy != 0) {
         proxy_instance * proxy = (proxy_instance*)raw_proxy;

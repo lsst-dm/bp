@@ -11,6 +11,11 @@
 
 namespace boost { namespace python {
 
+/**
+ *  Call policy that returns a const proxy to the passed result object.
+ *  If the result type doesn't have a __const_proxy__ member,
+ *  the original result is returned.
+ */
 template <typename Base = default_call_policies>
 struct as_const : Base {
     static PyObject * postcall(PyObject *, PyObject * result) {

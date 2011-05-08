@@ -1,0 +1,40 @@
+# -*- python -*-
+#
+# Setup our environment
+#
+import os.path
+import lsst.scons.SConsUtils as scons
+
+env = scons.makeEnv("daf_data",
+                    r"$HeadURL$",
+                    scons.ConfigureDependentProducts("daf_data"))
+env.Help("""
+LSST Data Access Framework data package
+""")
+
+env.Append(CXXFLAGS="-std=c++0x")
+
+###############################################################################
+# Boilerplate below here
+
+#
+# Build/install things
+#
+
+for d in Split("lib python/lsst/daf/data doc tests"):
+    SConscript(os.path.join(d, "SConscript"))
+
+env['IgnoreFiles'] = r"(~$|\.pyc$|^\.svn$|\.o$)"
+
+env.InstallLSST(env['prefix'], ["doc", "include", 'etc', "lib", "python", "ups"])
+
+scons.CleanTree(r"*~ core *.so *.os *.o")
+
+#
+# Build TAGS files
+#
+files = scons.filesToTag()
+if files:
+    env.Command("TAGS", files, "etags -o $TARGET $SOURCES")
+
+env.Declare()

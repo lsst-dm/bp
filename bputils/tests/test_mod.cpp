@@ -124,10 +124,6 @@ BOOST_PYTHON_MODULE(test_mod) {
     bp::def("return_tuple", &return_tuple);
     bp::def("accept_tuple", &accept_tuple);
 
-    
-    bp::std_pair_to_python<int,double>();
-    bp::std_pair_from_python<int,double>();
-
     bp::def("return_pair", &return_pair);
     bp::def("accept_pair", &accept_pair);
 

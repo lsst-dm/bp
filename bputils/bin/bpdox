@@ -117,13 +117,13 @@ if __name__ == "__main__":
         lsst.bputils.bpdox.main(*sys.argv[1:])
     except Exception, err:
         if verbose:
-            if len(err.args[0]) > 1:
+            if not isinstance(err.args[0], str):
                 message = err.args[0][1] + err.args[0][0] + "\n";
             else:
                 import traceback
                 message = traceback.format_exc()
         else:
-            if len(err.args[0]) > 1:
+            if not isinstance(err.args[0], str):
                 message = err.args[0][0] + "\n";
             else:
                 message = err.args[0] + "\n"

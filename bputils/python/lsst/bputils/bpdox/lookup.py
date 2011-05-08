@@ -5,50 +5,44 @@ except ImportError:
 import targets
 import os
 import logging
-
+from collections import OrderedDict
 
 class OverloadSet(object):
 
     def __init__(self, name, parent):
         self.name = name
         self.parent = parent
-        self._items = []
+        self.all = OrderedDict()
+        self.visible = OrderedDict()
 
     def ignore(self, refid):
-        for item in self._items:
-            if item.refid == refid:
-                item.hidden = True
-                return
+        self.all[refid].hidden = True
+        try:
+            del self.visible[refid]
+        except KeyError:
+            pass
 
     def add(self, member):
-        self._items.append(member)
-
-    def __iter__(self):
-        for item in self._items:
-            if hasattr(item, "hidden") and item.hidden:
-                continue
-            yield item
-
-    def __len__(self):
-        return len(tuple(iter(self)))
+        self.all[member.refid] = member
+        if not member.hidden:
+            self.visible[member.refid] = member
 
     def get(self):
-        if len(self) != 1:
+        if len(self.visible) != 1:
             raise LookupError("Multiple unresolved overloads of '{0}'.".format("::".join(self.name)))
-        for item in self._items:
-            if not hasattr(item, "hidden") or not item.hidden:
-                return item
+        for member in self.visible.itervalues():
+            return member
 
-    def findone(self, name):
+    def findone(self, label):
         result = None
-        for item in self._items:
-            if hasattr(item, "label") and item.label == name:
+        for member in self.all.itervalues():
+            if member.label == label:
                 if result is None:
-                    result = item
+                    result = member
                 else:
                     raise LookupError(
                         "Identical labels '{0}' for overloads of '{1}'.".format(
-                            name, "::".join(self.name)
+                            label, "::".join(self.name)
                             )
                         )
         if result is None:
@@ -57,17 +51,17 @@ class OverloadSet(object):
                 )
         return result
 
-    def findmany(self, names):
+    def findmany(self, labels):
         result = []
         found = set()
-        for item in self._items:
-            if hasattr(item, "label") and item.label in names:
-                result.append(item)
-                found.add(item.label)
-        for name in names:
-            if name not in found:
+        for member in self.all.itervalues():
+            if member.label in labels:
+                result.append(member)
+                found.add(member.label)
+        for label in labels:
+            if label not in found:
                 raise LookupError(
-                    "Label '{0}' not found for overload '{1}'.".format(name, "::".join(self.name))
+                    "Label '{0}' not found for overload '{1}'.".format(label, "::".join(self.name))
                 )
         return result
 
@@ -81,6 +75,8 @@ class Node(object):
         self.kind = kind
         self.refid = refid
         self.target = None
+        self.hidden = False
+        self.label = None
 
 class MemberNode(Node):
 
@@ -94,12 +90,23 @@ class MemberNode(Node):
         if self.target is None:
             raise RuntimeError("Failed to load target for object '{0}'.".format("::".join(self.name)))
 
+    def hide(self):
+        self.parent.members[self.name[-1]].ignore(self.refid)
+
 class CompoundNode(Node):
 
     def __init__(self, name, kind, refid, path):
         Node.__init__(self, name, kind, refid)
         self.xmlfile = os.path.join(path, "{0}.xml".format(self.refid))
-        self.members = {}
+        self.members = OrderedDict()
+
+    def _get_visible(self):
+        result = OrderedDict()
+        for overloads in self.members.itervalues():
+            for overload in overloads.visible.itervalues():
+                result[overload.refid] = overload
+        return result
+    visible = property(_get_visible)
 
     def load(self, index):
         if self.target is not None:
@@ -148,13 +155,22 @@ class CompoundNode(Node):
                         member_node.target = targets.Variable(member_xml, index, member_node)
                     elif member_node.kind == "enum":
                         member_node.target = targets.Enum(member_xml, index, member_node)
+                    else:
+                        member_node.hide()
                     if __debug__:
-                        logging.debug(
-                            "    added {type} member: '{name}'".format(
-                                type=type(member_node.target).__name__,
-                                name="::".join(member_node.name)
+                        if member_node.target:
+                            logging.debug(
+                                "    added {type} member: '{name}'".format(
+                                    type=type(member_node.target).__name__,
+                                    name="::".join(member_node.name)
+                                    )
                                 )
-                            )
+                        else:
+                            logging.debug(
+                                "    skipping C++-only member: '{name}'.".format(
+                                    name="::".join(member_node.name)
+                                    )
+                                )
 
 class Index(object):
 

@@ -47,18 +47,29 @@ class Formatter(object):
         "ClassWrapper": '{bp}::class_< {args} >', 
         "ClassDeclaration": \
             '{wrapper}{variable}(\n{indent1}"{name}",\n{indent1}{doc},\n{indent1}{init}\n{indent0})',
-        "InitVisitor0": '{bp}::init<>(\n{indent1}{doc}\n{indent0})',
-        "InitVisitorN": '{bp}::init< {param_types} >(\n{indent1}{keyword_args},\n{indent1}{doc}\n{indent0})',
+        "InitVisitor0": \
+            '{bp}::init<>(\n{indent1}{doc}\n{indent0})',
+        "InitVisitorN": \
+            '{bp}::init< {param_types} >(\n{indent1}{keyword_args},\n{indent1}{doc}\n{indent0})',
         "KeywordArg": '{bp}::arg("{name}"){default}',
         "MethodDeclaration": 'def(\n{args}\n{indent0})',
         "MemberFunctionPointer": \
             '({return_type} ({class_type}::*)({param_types}){const})&{class_type}::{name}',
         "StaticMemberFunctionPointer": \
             '({return_type} (*)({param_types}))&{class_type}::{name}',
-        "FunctionPointer": '({return_type} (*)({param_types}))&{name}',
-        "FunctionDeclaration": '{bp}::def(\n{args}\n{indent0})',
-        "EnumDeclaration": '{bp}::enum_< {ctype} >(\n{indent1}"{name}",\n{indent1}{doc}\n{indent0})',
+        "FunctionPointer": \
+            '({return_type} (*)({param_types}))&{name}',
+        "FunctionDeclaration": \
+            '{bp}::def(\n{args}\n{indent0})',
+        "EnumDeclaration": \
+            '{bp}::enum_< {ctype} >(\n{indent1}"{name}",\n{indent1}{doc}\n{indent0})',
         "EnumValue": 'value("{name}", {value})',
+        "DataMemberVisitor":
+            'def(\n{indent1}{bp}::const_aware::data_member(\n' \
+            '{indent2}"{name}",\n{indent2}&{class_type}::{name},\n' \
+            '{indent2}{doc}\n{indent1})\n{indent0})',
+        "StaticDataMemberVisitor":
+            'def({bp}::const_aware::data_member("{name}", &{class_type}::{name}))',
         }
 
     def __init__(self, codewidth=120, docwidth=80, bp="bp", indent="    "):
@@ -214,7 +225,7 @@ class Formatter(object):
         by customized templates.
         """
         if templates is None: templates = self.templates
-        if not target.params:
+        if not target.params or any(p.name is None for p in target.params):
             return None
         terms = []
         for param in target.params:
@@ -262,6 +273,9 @@ class Formatter(object):
         if target.params:
             param_types = self.getParamTypes(target, scope, templates=templates, **kw)
             keyword_args = self.getKeywordArgs(target, scope, templates=templates, **kw)
+        else:
+            keyword_args = None
+        if keyword_args is not None:
             return templates["InitVisitorN"].format(
                 bp=self.bp, keyword_args=keyword_args, param_types=param_types, 
                 indent0=indent, indent1=indent1, doc=doc, **kw
@@ -272,7 +286,8 @@ class Formatter(object):
                 )
 
     def getInitDeclaration(self, target, scope=(), indent="", doc=None, templates=None, **kw):
-        """Generate a bp::init<>() visitor for use inside a bp::class_::def or bp::class_ constructor call.
+        """Generate a def(bp::init<>()) declaration for use inside a bp::class_::def or
+        bp::class_ constructor call.
 
         Arguments:
           target -------- A constructor target.
@@ -366,8 +381,9 @@ class Formatter(object):
                                               class_type=class_type, **kw)]
         if call_policies is not None:
             args.append(call_policies)
-        if target.params:
-            args.append(self.getKeywordArgs(target, scope, templates=templates, **kw))
+        kwargs = self.getKeywordArgs(target, scope, templates=templates, **kw)
+        if kwargs is not None:
+            args.append(kwargs)
         args.append(doc)
         return templates["MethodDeclaration"].format(
             bp=self.bp, args=",\n".join((indent1 + arg) for arg in args),
@@ -398,15 +414,16 @@ class Formatter(object):
         args = ['"{0}"'.format(name), self.getFunctionPointer(target, scope, templates=templates, **kw)]
         if call_policies is not None:
             args.append(call_policies)
-        if target.params:
-            args.append(self.getKeywordArgs(target, scope, templates=templates, **kw))
+        kwargs = self.getKeywordArgs(target, scope, templates=templates, **kw)
+        if kwargs is not None:
+            args.append(kwargs)
         args.append(doc)
         return templates["FunctionDeclaration"].format(
             bp=self.bp, args=",\n".join((indent1 + arg) for arg in args), indent0=indent, indent1=indent1
             )
 
     def getEnum(self, target, scope=(), indent="", tscope=None, doc=None, templates=None, **kw):
-        """Generate a bp::def call for the given Function target.
+        """Generate a bp::enum_ declaration for the given Enum object.
 
         Arguments:
           target -------- An Enum target.
@@ -441,3 +458,34 @@ class Formatter(object):
                 cvalue = "::".join((tscope, target.name[-1]))
             lines.append(templates["EnumValue"].format(indent=indent1, name=value.name[-1], value=cvalue))
         return "\n{0}.".format(indent1).join(lines)
+        
+    def getVariable(self, target, scope=(), indent="", doc=None, class_type=None, templates=None, **kw):
+        """Generate a C++ member function pointer, casted to its exact type to resolve
+        overloads.
+
+        Arguments:
+          target -------- A Variable target.
+          scope --------- The C++ namespace considered active in qualifying names.
+          indent -------- Characters to add before all but the first line.
+          class_type ---- The name of the class the data member belongs to.
+          doc ----------- Doc string for the target, including extra quotes.
+          templates ----- Dictionary of format strings to use (default is self.templates).
+        
+        Additional keyword arguments will be passed on to the string format calls and can be used
+        by customized templates.
+        """
+        if templates is None: templates = self.templates
+        indent1 = indent + self.indent
+        indent2 = indent1 + self.indent
+        if doc is None:
+            doc = self.getDocumentation(target, scope, indent=indent2, templates=templates, **kw)
+        name = target.name[-1]
+        if target.is_static:
+            template = self.templates["StaticDataMemberVisitor"]
+        else:
+            template = self.templates["DataMemberVisitor"]    
+        return template.format(
+            bp=self.bp, name=name, indent0=indent, indent1=indent1, indent2=indent2,
+            class_type=class_type, doc=doc, **kw
+            )
+    

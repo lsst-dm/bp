@@ -84,6 +84,8 @@ public:
         return *this;
     }
 
+    proxy_class & add_static_property(char const * name, object const & fget);
+
 };
 
 }}} // namespace boost::python::const_aware

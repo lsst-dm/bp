@@ -42,7 +42,7 @@ class Target(object):
                         cmd = child.get("url")[6:]
                         if cmd.startswith("label:"):
                             label = cmd[6:].strip()
-                            if hasattr(node, "label"):
+                            if node.label:
                                 logging.warning(
                                     "    cannot apply label '{new}'; overload of '{name}' "
                                     "already already labeled '{old}'".format(
@@ -57,8 +57,7 @@ class Target(object):
                                 )
                         elif cmd.strip() == "ignore":
                             try:
-                                overloads = node.parent.members[node.name[-1]]
-                                overloads.ignore(node.refid)
+                                node.hide()
                                 logging.debug("    ignoring overload of '{0}'".format("::".join(node.name)))
                             except:
                                 logging.warning(
@@ -66,7 +65,7 @@ class Target(object):
                                         )
                         else:
                             logging.warning(
-                                "    unrecognized @bpdox command '{0}' for object '{1}'".format(
+                                "    unrecognized @bpdox command '{0}' for '{1}'".format(
                                     cmd, "::".join(node.name)
                                     )
                                 )
@@ -80,11 +79,23 @@ class Target(object):
         return paragraphs
 
     def __init__(self, xml, index, node):
+        if xml.get("prot") == "protected" or xml.get("prot") == "private":
+            node.hide()
+            logging.debug("    hiding non-public member: '{0}'".format("::".join(node.name)))
+        if node.name[-1].startswith("~") or node.name[-1].startswith("operator"):
+            node.hide()
+            logging.debug("    hiding special member: '{0}'".format("::".join(node.name)))
+        if node.name[-1].startswith("@"):
+            node.hide()
+            logging.debug("    hiding anonymous member: '{0}'".format("::".join(node.name)))
+        location = xml.find("location")
+        if location is not None:
+            if location.get("file").endswith(".py"):
+                logging.debug("    hiding pure-python member: '{0}'".format("::".join(node.name)))
+                node.hide()
         self.brief = self.parseParagraphs(xml.find("briefdescription"), index, node)
         self.detailed = self.parseParagraphs(xml.find("detaileddescription"), index, node)
         self.name = node.name
-        if xml.get("prot") == "protected" or xml.get("prot") == "private":
-            node.hidden = True
 
 class Class(Target):
     """A Target subclass for classes and structs.
@@ -142,14 +153,19 @@ class Variable(Target):
     def __init__(self, xml, index, node):
         self.cxxtype = CxxType(xml.find("type"), index)
         Target.__init__(self, xml, index, node)
+        self.is_static = (xml.get("static") == "yes")
+
+    def format(self, formatter, scope=(), **kw):
+        return [formatter.getVariable(self, scope=scope, **kw)]
 
 class Function(Callable):
 
     def __init__(self, xml, index, node):
         Callable.__init__(self, xml, index, node)
         self.cxxtype = CxxType(xml.find("type"), index)
-        if self.cxxtype.template == "def":  # It's a pure-Python function!
-            node.hidden = True
+
+    def format(self, formatter, scope=(), **kw):
+        return [formatter.getFunctionDeclaration(self, scope=scope, **kw)]
 
 class Method(Function):
 
@@ -159,14 +175,21 @@ class Method(Function):
         self.is_static = (xml.get("static") == "yes")
         self.is_reimplementation = (xml.find("reimplementation") is not None)
 
+    def format(self, formatter, scope=(), **kw):
+        return [formatter.getMethodDeclaration(self, scope=scope, **kw)]
+
 class Constructor(Callable):
 
     def __init__(self, xml, index, node):
         Callable.__init__(self, xml, index, node)
+                       
 
     def _is_default(self):
         return len(self.params) == 0
     is_default = property(_is_default)
+
+    def format(self, formatter, scope=(), **kw):
+        return [formatter.getInitDeclaration(self, scope=scope, **kw)]
 
 class Enum(Target):
 
@@ -177,12 +200,20 @@ class Enum(Target):
             value_node = index.by_refid[value_xml.get("id")]
             value_node.target = EnumValue(value_xml, index, value_node)
             self.values.append(value_node.target)
+
+    def format(self, formatter, scope=(), **kw):
+        logging.warning("Fully-automated enum wrappers not supported ('{0}')."
+                        .format("::".join(self.name)))
+        return []
         
 class EnumValue(Target):
 
     def __init__(self, xml, index, node):
         Target.__init__(self, xml, index, node)
         self.value = xml.findtext("initializer")
+
+    def format(self, formatter, scope=(), **kw):
+        return []
 
 class Parameter(object):
 

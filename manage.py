@@ -4,6 +4,7 @@ import sys
 
 packages = [
     ("base", "base"),
+    ("ndarray", "ndarray"),
     ("bputils", "bputils"),
     ("pex/exceptions", "pex_exceptions"),
     ("utils", "utils"),

@@ -1,7 +1,9 @@
 setupRequired(base == bp)
-setupRequired(python >= 2.6)
+setupRequired(python >= 2.7)
 setupRequired(boost >= 1.44.0)
 setupRequired(numpy >= 1.5)
+setupOptional(eigen == 2.0.15)
+setupOptional(ndarray == bp)
 
 envPrepend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
 envPrepend(DYLD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)

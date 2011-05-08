@@ -5,6 +5,15 @@ import os
 constAwareLib = env.LoadableModuleIncomplete("const_aware_mod", "const_aware_mod.cpp",
                                              LIBS=env.getLibs("main python"))
 
+eigenLib = env.LoadableModuleIncomplete("eigen_mod", "eigen_mod.cpp",
+                                        LIBS=env.getLibs("main python"))
+
+ndarrayLib = env.LoadableModuleIncomplete("ndarray_mod", "ndarray_mod.cpp",
+                                        LIBS=env.getLibs("main python"))
+
+ndarrayTablesLib = env.LoadableModuleIncomplete("ndarray_tables_mod", "ndarray_tables_mod.cpp",
+                                        LIBS=env.getLibs("main python"))
+
 testLib = env.LoadableModuleIncomplete("test_mod", "test_mod.cpp",
                                        LIBS=env.getLibs("main python"))
 
@@ -18,6 +27,18 @@ tests = lsst.scons.tests.Control(env, verbose=True)
 
 for target in tests.run("const_aware.py"):
     env.Depends(target, constAwareLib)
+    env.Depends(target, "../lib/libbputils.so")
+
+for target in tests.run("eigen.py"):
+    env.Depends(target, eigenLib)
+    env.Depends(target, "../lib/libbputils.so")
+
+for target in tests.run("ndarray.py"):
+    env.Depends(target, ndarrayLib)
+    env.Depends(target, "../lib/libbputils.so")
+
+for target in tests.run("ndarray_tables.py"):
+    env.Depends(target, ndarrayTablesLib)
     env.Depends(target, "../lib/libbputils.so")
 
 for target in tests.run("test_script.py"):

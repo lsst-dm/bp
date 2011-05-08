@@ -4,3 +4,6 @@ base:
 "numpy",
 "boost_python", "boost/python.hpp", "boost_python:C++;python"
 "boost_filesystem", "boost/filesystem.hpp", "boost_filesystem:C++"
+"eigen", "Eigen/Core"
+ndarray:
+"ndarray", "lsst/ndarray.h"

@@ -3,5 +3,4 @@ Import('env')
 import os
 
 env.SharedLibrary('bputils', 
-                  Glob("../src/*.cc") + Glob("../src/numpy/*.cpp") + Glob("../src/const_aware/*.cpp"), 
-                  LIBS=env.getLibs("self python"))
+                  Glob("../src/*.cc") + Glob("../src/*/*.cpp"), LIBS=env.getLibs("self python"))

@@ -1,2 +1,0 @@
-# Doxygen spits out warnings that should be ignored for ndarray.
-WARNINGS = NO

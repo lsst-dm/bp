@@ -1,6 +1,0 @@
-Import("env")
-
-config = env.DoxygenConfig("doxygen.conf.in")
-doxy = env.Doxygen(config)
-
-env.Depends(doxy, Glob("#include/lsst/*.h") + Glob("#include/lsst/*/*.h") + Glob("#include/lsst/*/*/*.h"))

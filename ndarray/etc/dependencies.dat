@@ -1,6 +1,0 @@
-base:
-"base", "lsst/base.h"
-"boost", "boost/shared_ptr.hpp"
-"boost_test", "boost/test/unit_test.hpp", "boost_unit_test_framework:C++"
-"eigen", "Eigen/Core"
-"fftw", "fftw3.h", "fftw3"

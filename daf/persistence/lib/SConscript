@@ -1,4 +1,0 @@
-# -*- python -*-
-Import('env')
-
-env.SharedLibrary("daf_persistence", Glob("../src/*.cc"), LIBS=env.getLibs("self"))

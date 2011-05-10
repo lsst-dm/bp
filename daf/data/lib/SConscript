@@ -1,4 +1,0 @@
-# -*- python -*-
-Import('env')
-
-env.SharedLibrary("daf_data", Glob("#src/*.cc"), LIBS=env.getLibs("self"))

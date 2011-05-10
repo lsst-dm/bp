@@ -1,6 +1,0 @@
-# -*- python -*-
-Import('env')
-
-config = env.DoxygenConfig("doxygen.conf.in")
-
-doxy = env.Doxygen(config)

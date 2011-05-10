@@ -1,0 +1,17 @@
+bputils:
+utils:
+"utils", "lsst/tr1/unordered_map.h", "utils:C++"
+pex_exceptions:
+"pex_exceptions", "lsst/pex/exceptions.h", "pex_exceptions:C++"
+daf_base:
+"daf_base", "lsst/daf/base.h", "daf_base:C++"
+pex_logging:
+"pex_logging", "lsst/pex/logging/Trace.h", "pex_logging:C++"
+pex_policy:
+"pex_policy", "lsst/pex/policy/Policy.h", "pex_policy:C++"
+"boost_regex", "boost/regex.hpp", "boost_regex:C++"
+"boost_serialization", "boost/serialization/serialization.hpp", "boost_serialization:C++"
+"boost_system", "boost/version.hpp", "boost_system:C++"
+"mpich2", "mpi.h", "lmpe mpe mpich:C++"
+"boost_mpi", "boost/mpi.hpp", "boost_mpi:C++"
+"mysqlclient", "mysql/mysql.h", "mysqlclient_r:C"

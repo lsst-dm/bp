@@ -1,0 +1,7 @@
+ myapp DEBUG: I'm starting this routine
+ myapp DEBUG: I'm starting this routine
+  myapp DEBUG: Testing arbitrary verbosity.
+  myapp DEBUG: Testing verbosity 2.
+  myapp DEBUG: Testing verbosity 2.
+ myapp DEBUG: I'm starting this routine
+   myapp DEBUG: Testing verbosity 3.

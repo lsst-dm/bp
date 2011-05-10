@@ -1,0 +1,20 @@
+# -*- python -*-
+Import("env")
+
+env.Program("Exception_1.cc", LIBS=env.getLibs("main test"))
+
+failerLib = env.LoadableModuleIncomplete("failer", Split("failerLib.cc Failer.cc"),
+                                         LIBS=env.getLibs("main python"))
+
+#
+# Tests
+#
+import lsst.scons.tests
+import os
+
+tests = lsst.scons.tests.Control(env, verbose=True)
+
+tests.run("Exception_1.cc")
+for target in tests.run("Exception_*.py"):
+    env.Depends(target, failerLib)
+    env.Depends(target, "../python/lsst/pex/exceptions/_exceptions.so")

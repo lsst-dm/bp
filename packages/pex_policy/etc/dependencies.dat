@@ -1,0 +1,13 @@
+bputils:
+"bputils", "lsst/bputils/exceptions.h", "bputils:C++;python"
+pex_exceptions:
+"pex_exceptions", "lsst/pex/exceptions/Exception.h", "pex_exceptions:C++",
+utils:
+"utils", "lsst/utils/Utils.h", "utils:C++",
+daf_base:
+"daf_base", "lsst/daf/base/Citizen.h", "daf_base:C++",
+"boost_filesystem", "boost/version.hpp", "boost_filesystem:C++",
+"boost_regex", "boost/regex.hpp", "boost_regex:C++",
+"boost_system", "boost/system/config.hpp", "boost_system:C++",
+"boost_serialization", "boost/serialization/serialization.hpp", "boost_serialization:C++",
+"boost_test", "boost/test/unit_test.hpp", "boost_unit_test_framework:C++;test"

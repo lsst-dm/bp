@@ -1,0 +1,211 @@
+namespace lsst { namespace pex { namespace logging {
+/**
+\mainpage lsst::pex::logging:  writing messages to logs
+
+ - \ref secLogIntro "Introduction"
+ - \ref secLogFw "The Logging Framework"
+ - \ref pgLogHowto "The Logging How-To"
+
+\section secLogIntro Introduction
+
+The LSST Logging framework allows modules and applications to record
+plain text statements about what is happening (including errors,
+warnings, status information, and debugging messages) as well as typed
+data delivered as named properties.  It allows users to conveniently
+tag their messages with a hierarchical label that can indicate where in 
+the application the message originates.  Messages sent to a Log can be 
+routed to multiple destinations, such as to the terminal screen, to 
+a file and to the Event system, all simultaneously.  (Of particular
+importance is the ability to send log messages to the LSST Event
+System; this allows messages from a multi-process pipeline application
+to be collated in arbitrary but orderly ways.)  
+
+The logging framework provides a means to control the number of
+messages that appear at a destination (like the screen or a file).
+Log messages are tagged with a verbosity or "loudness" level
+(representing its relative importance), and Logs are set with
+verbosity thresholds.  If a message's verbosity level is less than the
+Log's threshold, it will not be recorded.  This allows applications
+and modules to selectively turn on and off, say, debugging messages of
+which there may be a great number.  Thresholds are implemented to
+minimize the impact of unrecorded messages on overall performance, so
+debugging messages can remain permanently compiled into the code.
+Finally, the different streams that receive log messages can have
+their own thresholds set as well; this allows one to, for example,
+send more messages to a file than to the screen.
+
+There is a special case of logging that referred to as \e debugging
+or \e tracing which is about printing messages that are intended
+for display primarily during the debugging stage of development.
+There are two APIs for doing this (represented by the Debug and Trace
+classes); they behave the same way, though Trace is provided for
+backwards compatibility.  These APIs provide an additional mechanism
+for filtering out debugging messages at compile time for further
+minimization of the impact on the application messages that have been
+"turned off".  
+
+\section secLogFw The Logging Framework
+
+ - \ref secLogHier "The Log Hierarchy and Names"
+ - \ref secLogRec "LogRecords"
+ - \ref secLogFmt "Log Destinations, Formats, and Preamble"
+ - \ref secLogVerb "Verbosity and Thresholds"
+
+\subsection secLogHier The Log Hierarchy and Names
+
+The Log class is at the center of the logging framework, representing
+an object that can receive messages to potentially print.  A Log is
+part of hierarchy of logs; at the top of the hierarchy is the \e root
+log.  From any log, so-called \e child log can be created.  Every log
+has a hierarchical name associated with it (e.g. "harness.slice").
+Periods in the name delimit the levels of the hierarchy (i.e. the more
+periods in the name, the lower the log is in the hierarchy).  The root
+log typically has an empty string as its name.  The log name is
+typically printed out with the message, so the purpose of the
+name is to reflect where in the application the message came from.  A
+name with more components (i.e. lower in the hierarchy) are meant to
+reflect messages from deeper in the application.  
+
+Note that an application can engage multiple, independent Log
+hierarchies; however, most applications will simply use one.  One way
+an application can share a hierarchy through-out all its various
+functions and classes is to pass references to Log instances.  This
+method is pretty intrusive as it requires function APIs to accommodate
+this.  Thus, for the common simple case of sharing a single Log
+hierarchy across an application, the Log framework supports the notion
+of a <em>default root log</em>.  A reference to this Log can be
+retrieved from anywhere in the application via the static function,
+Log::getDefaultLog().  By default, this is Log is configured to simply
+send messages to the screen; however, an application should over-ride
+this--usually at the start of the application--via a Log class's 
+Log::createDefaultLog() static function.  In particular, the
+application sets up the destinations, formats, and \ref secLogRec
+"default record properties".  For example, the application might
+set-up a file to capture messages as well as well as the default
+volume threshold.  
+
+\subsection secLogRec LogRecords
+
+A message is sent to its destination for rendering as a LogRecord
+representing a single transactional unit.  In fact, a LogRecord can
+have any number of messages attached to it.  It can also have any
+number of data properties attached to it as well.  (Actually, the
+messages and properties are all stored internally to a LogRecord as a
+PropertySet.)  LogRecords are usually created from a Log instance;
+doing so will usually attach certain standard properties to the
+message.  One standard property is the name of the log itself, and
+another is the verbosity level of the message.  When the LogRecord is
+sent to the Log for rendering, the log will also attach an additional
+property giving the timestamp that the message was sent.  For the
+simplest messages, it's not necessary to deal with LogRecord instances
+explicitly; their creation is hidden behind simple log functions like
+Log::log().  
+
+\subsection secLogFmt Log Destinations, Formats, and Preamble
+
+A Log instance can send messages to any number of destinations
+automatically, represented by LogDestination objects.  Typically a
+destination is the terminal screen (standard error by default) or a
+file, but it can also be any other destination, such as the LSST Event
+System.  Each destination has an associated LogFormatter; thus, each
+destination can be in a different format.  (For example, one may
+prefer a more verbose or structured format for a file and a more
+brief, readable format for the screen.)  When a new log is created
+from a <em>parent log</em>, the new log inherits all the destinations
+and formats of its parent.  Additional destinations can then be added
+to the new log, if desired, without affecting the behavior of the
+parent.  
+
+Recall that a Log instance has an associated verbosity threshold for
+filtering out messages that are not "urgent" enough.  In addition to
+this filter, each LogDestination has an additional verbosity threshold
+associated with it.  This allows one to, for example, send only
+informational messages and warnings to the screen while sending all
+messages, including debugging messages to a file.  
+
+A Log instance can also be configured with what is called a \em
+preamble.  The preamble is a set of properties that will be included
+with every LogRecord delivered to the destinations.  At a minimum, this
+will include the Log name (with the property name "LOG") and the
+verbosity level ("LEVEL").  Applications may add others.  For example,
+the LSST Pipeline Harness adds properties such as the host where
+the recording process is running, the slide identifier, and the
+pipeline run ID.  Also attached to each record is the "TIMESTAMP"
+property, which records the time that the record was sent through the
+Log.  (This property is not technically a preamble property as its
+value is not static.)  
+
+Like destinations, one can add additional preamble properties to a
+child log without affecting the parent log.  
+
+\subsection secLogVerb Verbosity and Thresholds
+
+Verbosity levels and verbosity thresholds work together to control the
+amount of logging actually recorded.  In particular, every LogRecord
+is created with a verbosity level or "volume":  one can think of it as
+a measure of the "loudness" of the message or its level of urgency.
+It is measured as an integer where higher numbers are louder or more
+urgent.  Log objects (as well as LogDestinations; see previous
+section) have associated verbosity thresholds--like a signal
+barrier--also measured as an integer.  If a record's level is as high
+as the Log's threshold or higher, the Log will send the record onto
+the destination.  Thus, one can increase the number of messages that
+get recorded by lowering the threshold of the log.  
+
+Applications have the ability to set message volumes and thresholds
+however desired; however, to provide some consistency across different
+modules, the logging framework defines some conventional levels via
+static constants defined in the Log class:
+
+<table>
+<tr>
+<th>Constant Name</th><th>Value</th><th>Meaning</th>
+</tr>
+<tr>
+<td>FATAL</td> <td>20</td>  <td>message reporting a severe,
+                                debilitating, or fatal error</td>
+</tr>
+<tr>
+<td>WARN</td>  <td>10</td>  <td>message reporting abnormal but non-fatal 
+                                conditions or behavior</td>
+</tr>
+<tr>
+<td>INFO</td>  <td>0</td>   <td>message reporting normal behavior</td>
+</tr>
+<tr>
+<td>DEBUG</td> <td>-10</td> <td>message reporting status that aids in 
+                                debugging</td>
+</tr>
+</table>
+
+These constants can be used to set either a message level or a Log
+threshold.  Given this and the above convention, this means that
+<em>any message with a negative level is considered a debugging
+message</em>.  This fact is used by the default screen formatter
+(IndentedFormatter) to indent debugging messages based on the
+verbosity level.  
+
+Note that in the debugging interfaces provide via the Debug and Trace
+API, verbosity works slightly differently.  Here, the verbosity number
+represents how \e unimportant or detailed the message is; that is, the
+higher the number provided, the less likely it is to be actually
+printed.  As the Debug interface is built on top of Log, the
+number is multiplied by -1 to convert it to a verbosity level.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
+}}}

@@ -1,0 +1,28 @@
+ WARNING: this is a warning
+test: I like your hat
+  LEVEL: 0
+
+test: I have gloves just like those
+  LEVEL: 0
+
+test: I said, I like your shoes
+  LEVEL: 0
+
+test.grand.child: Let's play
+  LEVEL: 0
+  STATUS: now
+
+Non-default Thresholds:
+(root)               0
+ test               20
+
+test.grand.child FATAL: help: I've fallen
+test.grand.child FATAL: & I can't get up
+  LEVEL: 20
+  NODE: 5
+  RUNID: testRun
+
+test.grand.child FATAL: never mind
+  LEVEL: 20
+  RUNID: testRun
+

@@ -1,0 +1,29 @@
+# -*- python -*-
+Import("env")
+
+for src in Glob("*.cc"):
+    env.Program(src, LIBS=env.getLibs("main test"))
+
+#
+# Tests
+#
+import lsst.scons.tests
+import os
+
+tests = lsst.scons.tests.Control(env, verbose = True)
+tests.run("testThresholdMemory.cc")
+tests.run("testLogRecord.cc")
+tests.run("testPropertyPrinter.cc")
+tests.run("testLogFormatter.cc")
+tests.run("testLogDestination.cc")
+tests.run("testFileDest.cc")
+tests.run("testLog.cc")
+tests.run("testDebug.cc")
+tests.run("testNoDebug.cc")
+tests.run("testTrace.cc")
+tests.run("testNoTrace.cc")
+tests.run("testDefLog.cc")
+
+for target in tests.run("test*.py"):
+    env.Depends(target,
+              "../python/lsst/pex/logging/_logging%s" % (env['LDMODULESUFFIX']))

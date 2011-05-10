@@ -1,0 +1,15 @@
+# -*- python -*-
+Import('env')
+
+env.Program("trace", ["trace.cc"], LIBS=env.getLibs("main"))
+env.Program("log", ["log.cc"], LIBS=env.getLibs("main"))
+env.Program("debug", ["debug.cc"], LIBS=env.getLibs("main"))
+
+#
+# Tests
+#
+import lsst.scons.tests
+tests = lsst.scons.tests.Control(env, verbose=True)
+
+if tests.runExamples:
+    tests.run("*.cc")

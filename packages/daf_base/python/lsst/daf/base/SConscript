@@ -1,0 +1,9 @@
+# -*- python -*-
+import re
+Import("env")
+
+src = env.BPDox("#pysrc/_base.cc.in")
+
+env.Depends(src, "#doc/xml/daf_base")
+
+env.LoadableModuleIncomplete("_base", src, LIBS=env.getLibs("main python"))

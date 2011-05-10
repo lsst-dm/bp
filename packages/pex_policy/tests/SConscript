@@ -1,0 +1,25 @@
+# -*- python -*-
+Import("env")
+
+env.Program(["Policy_1.cc"], LIBS=env.getLibs("main test"))
+env.Program(["Policy_2.cc"], LIBS=env.getLibs("main test"))
+env.Program(["Policy_3.cc"], LIBS=env.getLibs("main test"))
+env.Program(["Policy_4.cc"], LIBS=env.getLibs("main test"))
+env.Program(["PAFtypes.cc"], LIBS=env.getLibs("main test"))
+env.Program(["PAFBadSyntax.cc"], LIBS=env.getLibs("main test"))
+env.Program(["testDefaults.cc"], LIBS=env.getLibs("main test"))
+env.Program(["DefaultPolicyFile_1.cc"], LIBS=env.getLibs("main test"))
+env.Program(["PolicyString_1.cc"], LIBS=env.getLibs("main test"))
+
+#
+# Tests
+#
+import lsst.scons.tests
+import os
+
+tests = lsst.scons.tests.Control(env, ignoreList=[], verbose=True)
+
+tests.run("*.cc")
+
+for target in tests.run("*.py"):
+    env.Depends(target, "../python/lsst/pex/policy/_policy%s" % env['LDMODULESUFFIX'])

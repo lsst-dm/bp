@@ -1,0 +1,4 @@
+# -*- python -*-
+Import('env')
+
+env.SharedLibrary("{product}", Glob("#src/*.cc") + Glob("#src/*/*.cc"), LIBS=env.getLibs("self"))

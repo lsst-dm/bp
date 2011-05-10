@@ -1,0 +1,17 @@
+utils:
+"utils", "lsst/tr1/unordered_map.h", "utils:C++"
+pex_exceptions:
+"pex_exceptions", "lsst/pex/exceptions.h", "pex_exceptions:C++"
+daf_base:
+"daf_base", "lsst/daf/base.h", "daf_base:C++"
+pex_logging:
+"pex_logging", "lsst/pex/logging/Trace.h", "pex_logging:C++"
+pex_policy:
+"pex_policy", "lsst/pex/policy/Policy.h", "pex_policy:C++"
+daf_persistence:
+"daf_persistence", "lsst/daf/persistence.h", "daf_persistence:C++"
+security:
+"security", "lsst/security/Security.h", "security:C++"
+"boost_filesystem", "boost/version.hpp", "boost_filesystem:C++"
+"boost_regex", "boost/regex.hpp", "boost_regex:C++"
+"boost_system", "boost/version.hpp", "boost_system:C++"

@@ -39,6 +39,20 @@ def main(args):
                 os.chdir(root)
                 sys.exit(1)
         os.chdir(root)
+    elif cmd == "fix-import":
+        paths = []
+        for path, name in packages:
+            subpaths = path.split("/")
+            for n in range(0, len(subpaths)):
+                paths.append(os.path.join(path, "python", "lsst", *subpaths[:n]))
+        paths.append("sconsUtils/python/lsst")
+        for path in paths:
+            if not os.path.exists(path): continue
+            print "fixing", path
+            f = open(os.path.join(path, "__init__.py"), 'w')
+            f.write("import pkgutil\n")
+            f.write("__path__ = pkgutil.extend_path(__path__, __name__)\n")
+            f.close()
     elif cmd == "env":
         os.system("env")
     else:

@@ -1,0 +1,18 @@
+# -*- python -*-
+Import("env")
+
+import lsst.scons.tests
+#
+# Tests
+#
+ignoreList=[]
+tests = lsst.scons.tests.Control(env, ignoreList=ignoreList, verbose=True)
+    
+for fileName in Glob("*.cc"):
+    env.Program(fileName, LIBS=env.getLibs("main test"))
+
+tests.run("*.cc")
+
+# set up python tests
+for target in tests.run("*.py"):
+    env.Depends(target, "../python/lsst/utils/_utils%s" % (env["LDMODULESUFFIX"]))

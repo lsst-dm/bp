@@ -1,0 +1,523 @@
+namespace lsst { namespace pex { namespace logging {
+/**
+\page pgLogHowto The Logging How-To
+
+The Logging framework (found in the pex_logging package) provides
+interfaces for recording timestamped messages from any place in our
+software. Log users generally do not need to worry about configuring
+Logs or even care where the messages are going. They mainly need to: 
+
+ - grab the default log (or create a log from the default log)
+ - send messages to the log. 
+
+Most messages will be simple text; however, it also possible to attach
+arbitrary data properties to a log message. 
+
+In general, there are 2 classes of messages an application will want
+to produce,  normal log messages and \em debugging messages (also
+called \em tracing).  Both use the same underlying framework with the
+following features:
+
+ - all messages are timestamped
+ - it is designed for operating in a parallel environment
+ - messages can be filtered from display with minimal impact to the
+     application 
+ - the messages can be recorded for review and analysis later. 
+
+The logging framework supports a notion of hierarchical topics. A Log
+object is attached uniquely to a single topic; when messages sent to a
+Log get recorded, the record will be tagged with the topic name. The
+so-called root log is the Log attached to the root of the topic
+hierarchy (having a zero-length topic name). Child logs, or more
+generally, descendent logs, can be created from any Log instance;
+their names have a dot-delimited form like
+"harness.slice.process". Topic names are typically chosen to identify
+the piece of code that is sending the message. 
+
+In addition to this document, you can learn more about how to use the
+logging framework by consulting the doxygen documentation for the
+Log.h source file as well as file in the examples directory.
+
+ - \ref secLogHTBasics "The Basics"
+   - \ref secLogHTNormal  "Normal Log Messages"
+   - \ref secLogHTDebug   "Debug Messages"
+   - \ref secLogHTTrace   "Trace Messages"
+ - \ref secLogHTDetails "The Details"
+   -  \ref secLogHTRoot "Getting the Root Log"
+   -  \ref secLogHTChild "Child Logs"
+   -  \ref secLogHTVerb "Verbosity and Thresholds"
+   -  \ref secLogHTSimple "Simple messages"
+   -  \ref secLogHTProp "Including Properties"
+
+\section secLogHTBasics The Basics
+
+\subsection secLogHTNormal Normal Log Messages
+
+The most common use case is that you have a function within which you
+want to produce messages.  In this case, there are 3 basics things
+that you do:
+  - Near the beginning of the function, you create a log with a name 
+      that reflects where in the application the function runs.  This
+      is done with the Log constructor \e and the Log::getDefaultLog()
+      static function.
+  - Use Log::log() to send simple messages
+  - Use the Rec and Prop helper classes to create messages with extra 
+      properties attached. 
+
+Here's how you can do each of these three things.  First, in python: 
+
+\verbatim
+   import lsst.pex.logging as log
+   from lsst.pex.logging import Log, Rec, Prop
+
+   # create a log for my application
+   mylog = log.Log(log.getDefaultLog(), "harness.slice")
+
+   # send a simple message to the log
+   mylog.log(Log.INFO, "Constructing the Slice")
+
+   # attach a property (note: normally, properties are not printed to the screen by default)
+   Rec(mylog, Log.WARN) << "Premature end of pipeline" << Prop("nimages", 5) << Rec.endr
+\endverbatim
+
+The same in C++:
+
+\verbatim
+#include "lsst/mwi/logging/Log.h"
+
+using lsst::mwi::logging::Log;
+using lsst::mwi::logging::Rec;
+using lsst::mwi::logging::Prop;
+
+{
+   Log mylog(Log::getDefaultLog(), "harness.slice");
+
+   // send a simple message to the log
+   mylog.log(Log::INFO, "Constructing the Slice");
+
+   // attach a property; note that Prop is a templated item
+   Rec(mylog, Log::WARN) << "Premature end of pipeline" << Prop<int>("nimages", 5) << Rec::endr
+}
+\endverbatim
+
+Note that this technique makes it hard to distinguish messages coming
+from your function when is it is called from different contexts.  That
+is, if you want the log name to reflect when \c calcPSF() was called
+from \c convolve()--e.g. "convolve.calcPSF"--versus when it was called
+from \c deconvolve()--e.g. "deconvolve.calcPSF", then your function's 
+(\c calcPSF) needs a signature allows the parent log to passed in.
+See \ref secLogHTChild "Child Logs" below for details.  
+
+\subsection secLogHTDebug Debug Messages
+
+The Debug API in C++ provides a more efficient way to log debug messages.
+This is because the decision as to whether to print the message is
+made at compile-time.  To use this capability, you <em>must set 
+LSST_MAX_DEBUG</em> as a preprocessor define to the maximum verbosity
+level you want printed <em>before you include Debug.h</em>.  If you do
+not set \c LSST_MAX_DEBUG, the value 0 will be used by default, and
+all debug messages will be suppressed.
+
+Here's what the typical usage looks like:
+
+\verbatim
+#define LSST_MAX_DEBUG 3
+#include "lsst/mwi/logging/Debug.h"
+
+using lsst::mwi::logging::Debug;
+using lsst::mwi::logging::Log;
+
+{
+   // do this at the start of the function
+   Debug dbl("harness.slice");
+
+   // send a simple message to the log; this will get printed
+   // because 2 <= LSST_MAX_DEBUG
+   dbl.debug<2>("Constructing the Slice");
+
+   // send a formatted message to the log; this will not get printed
+   // because 5 exceeds LSST_MAX_DEBUG
+   dbl.debug<5>("Processing %i images", nimg);
+
+   // if you want to send normal informational or warning messages,
+   // too, you can; just use the inherited Log API:
+   dbl.log(Log::INFO, "applying custom algorithm")
+}
+\endverbatim
+
+There are compile-time efficiencies are not available from Python; however,
+the Debug API is still available.  Here's a simple use:
+
+\verbatim
+   import lsst.pex.logging as log
+
+   # create a log for my application
+   dbl = log.Debug("harness.slice")
+
+   dbl.debug(2, "Starting my function")
+
+   # you can also send normal log messages
+   dbl.log(Log.INFO, "Constructing the image")
+\endverbatim
+
+By default, the filtering of debug messages depends on the threshold
+that was set for the default root log, which is, in turn, set by
+default to 0 which filters out debug messages.  You can override this
+in two ways.  First, you can either pass in the verbosity limit to the Debug
+constructor:
+
+\verbatim
+   # maximum verbosity level printed will be three
+   dbl = log.Debug("harness.slice", 3)
+\endverbatim
+
+This only affects the named logger.  To set a debug verbosity level
+for the entire application, you can set a static variable \c
+Debug.default_max_debug somewhere near the start of your application: 
+\verbatim
+   import lsst.pex.logging as log
+   log.Debug.default_max_debug = 3
+   ...
+   // the verbosity limit will be 3
+   dbl = log.Debug("harness.slice")
+\endverbatim
+
+The \c default_max_debug variable only affects debug loggers created
+in python.  A different, but common use case is to set the verbosity
+limit in python to affect Debug calls in C++.  In python, it is
+sufficient to call the Debug constructor for a given name and
+verbosity limit; it is not necessary to actually use it: 
+
+\verbatim
+   import lsst.pex.logging as log
+
+   log.Debug("harness", 3)
+   log.Debug("harness.slice", 5)
+   ...
+\endverbatim
+
+In the above example, the \c harness.slice log and all its descendent
+logs will have a limit of 5, while \c harness and its descendents
+(other than \c harness.slice) will have a limit of 3.  
+
+\subsection secLogHTTrace Trace Messages
+
+The Trace API is supported in both C++ and python and is provided for
+backward compatibility with DC2.  New code is encouraged to prefer use
+of the Debug API.  Like Debug, to take advantage of compile-time
+efficiencies, you should set the \c LSST_MAX_TRACE preprocessor define
+before including \c Trace.h:
+
+\verbatim
+#define LSST_MAX_TRACE 3     // the maximum trace level that'll be compiled in
+#include "lsst/pex/logging/Trace.h"
+
+using namespace lsst::pex::logging;
+
+{
+    // this will be printed because 3 <= LSST_MAX_TRACE
+    TTrace<3>("foo.bar", "starting iteration #%d", 3);
+
+    // this will not be printed because 5 > LSST_MAX_TRACE
+    TTrace<5>("foo.bar", "it's working!");
+}
+\endverbatim
+
+Tracing can be done with runtime filtering as well.  In the Trace API,
+the verbosity limit for a log is set via a static Trace function call:
+
+\verbatim
+#include "lsst/pex/logging/Trace.h"
+
+using namespace lsst::pex::logging;
+
+{
+    // set the verbosity for a log name anywhere in the app
+    Trace.setVerbosity("foo.bar", 3);
+
+    // create messages anywhere afterward 
+    Trace("foo.bar", 2, "will be printed");
+    Trace("foo.bar", 5, "won't be printed: %i", 5);
+}
+\endverbatim
+
+One common use case is to only set the verbosity limit in python: this
+will effect the Trace calls in C++.
+
+\section secLogHTDetails The Details
+
+\subsection secLogHTRoot Getting the Root Log
+
+It is intended that a root log is created and configured right at the
+beginning of a program to fit the context of the application
+execution. Application code (i.e. stage implementations and the
+application classes it uses) generally should not be creating their
+own root log. Instead, application code should retrieve the root log
+from the getDefaultLog() function. For example, in python, 
+
+\verbatim
+   import lsst.pex.logging as log
+
+   // notice that this function is a member of the lsst.pex.logging module
+   root = log.getDefaultLog()
+\endverbatim
+
+It is similar in C++:
+
+\verbatim
+   using lsst::pex::logging::Log;
+
+   // notice that this function is a static function of the 
+   // lsst::pex::logging::Log class
+   Log root = Log::getDefaultLog();
+\endverbatim
+
+You can now start sending logging messages (see next section);
+although, it is more typical to first create a child log with a topic
+that identifies the code that will be sending messages (see "Child
+Logs" below). 
+
+What happens to messages sent to this root log depends on the context?
+Within your test and example programs, the default log is configured
+to send messages just to the screen (and the verbosity threshold is
+set to INFO; see below). In the context of the pipeline harness, the
+default log is configured to send messages to the event stream where
+all messages from all nodes are aggregated together and saved into a
+database, as well as written to a file. 
+
+\subsection secLogHTChild Child Logs 
+
+The purpose of the topic name is to give some indication of where in
+the system the message is coming from. The hierarchical nature of the
+names is intended to reflect the hierarchical structure of the call
+stack or container relationship the objects producing the messages
+(the choice is up to the user). For example, a sequence of code that
+uses the name "harness.slice" is expected to be "inside" the sequence
+that uses the name "harness". In the parlence of the logging
+framework, the log with the name "harness" is considered the parent
+log to the log with the name "harness.slice", the child log. 
+
+When you create a child log, it inherits the configuration of its
+parent, including the destinations of the messages and the verbosity
+threshold (unless explicitly overridden; see below). To create a child
+log, one normally passes the desired parent node to the Log
+constructor: 
+
+\verbatim
+    // create a child of the root log called "harness
+    Log harnesslog(Log::getDefaultLog(), "harness");
+
+    // create a grandchild of the root log, "harness.slice", via the child log
+    Log slicelog(harnesslog, "slice");
+
+    // create a grandchild of the root log, "harness.pipeline", via the root log
+    Log pipelinelog(Log::getDefaultLog(), "harness.pipeline");
+\endverbatim
+
+Notice that the name passed in is not the full name of the log but
+just part relative to the name of the log it is constructed from. 
+
+There is also a factory method for child logs that return them as
+pointers appropriate for wrapping as shared pointers: 
+
+\verbatim
+    // create a log pointer
+    shared_ptr<Log> logptr(Log::getDefaultLog().createChildLog("harness.pipeline"));
+\endverbatim
+
+\par A word about choosing log topic names
+
+In many cases, it may seem natural to pick log topic names to simply
+reflect the name of the class using the log, e.g. 
+
+\verbatim
+// This Is NOT recommended:
+class MyClass {
+private:
+    Log _log;
+public:
+    MyClass() : _log(Log::getDefaultLog(), "MyClass") {
+
+    }
+\endverbatim
+
+However, if this class is used in more than one context, then you
+can't really use the topic name to distinguish them. It's better if
+the names reflect either the container relationship of class instances
+or the call stack. That way, you can more easily select log messages
+from class A when called from class B. To enable this, you might
+consider passing either topic names (as illustrated in the recipe of
+the preceding section) or parent log objects themselves as arguments
+to constructors and/or functions. 
+
+\verbatim
+void calculate(const Data& input, const Log& callersLog) {
+     Log log(callersLog, "calculate");
+
+     ...
+}
+\endverbatim
+
+\subsection secLogHTVerb Verbosity and Thresholds
+
+The user has the ability to control the verbosity of the
+log by setting a threshold of importance that the message must meet in
+order to be recorded. One can set the threshold either as part of the
+construction of the Log or explicitly via the setThreshold() method. 
+
+\verbatim
+   mylog = Log(Log.getDefaultLog(), "harness.slice", Log::INFO)   // INFO, WARN, and FATAL messages will get recorded
+   mylog.log(Log::INFO, "log created");                           // This will get recorded
+
+   mylog.setThreshold(Log::WARN)                    // Now less verbose, passing only WARN and FATAL messages.  
+   mylog.log(Log::INFO, "log threshold set")        // This will *not* get recorded
+\endverbatim
+
+If the threshold is not set explicitly at construction or later, the
+threshold will be set to that of the so-called parent log that it was
+constructed from (in the above case, the root log). More specifically,
+the threshold will change as the parent log's threshold changes until
+it is explicitly overridden. 
+
+Note that once the verbosity threshold has been set for a Log with a
+particular topic name, it will be remembered even after that Log
+object has been deleted. 
+
+\subsection secLogHTSimple Simple messages
+
+A simple logging message is just a line of formatted text. To send
+one, you can use the log() function (in python): 
+
+\verbatim
+   log.log(Log::INFO, "Starting PSF determination")   # this is an informational message
+   log.log(Log::WARN, "Using default values")         # this is a warning message
+\endverbatim
+
+The first argument sets the verbosity level of the message based on
+the type of message it is. The predefined verbosity levels include (in
+order) DEBUG, INFO, WARN, and FATAL. (See next section.) 
+
+In C++, the preferred way to create formatted messages is via the \c
+format() function:
+
+\verbatim
+   log.format(Log::DEBUG, "Finished %d iterations", niter);
+\endverbatim
+
+The actual formatting will only be done if the message's level exceeds
+the log's threshold; this minimizes the impact of the call when such
+messages are being filtered out. 
+
+\subsection secLogHTNewRoot Creating your own root Log
+
+As mentioned above, if you do logging outside of the pipeline
+framework, the default log is configured to just print log messages to
+the screen. If you want take more control within, say, a test program
+or script, then you can create your own root log. The Log constructors
+provides full flexibility for configuring the destinations for log
+messages. However, there are some special purpose Log sub-classes that
+provide common configurations. 
+
+If you want, for example, to send messages to both the screen and a
+log file, you can create a DualLog to use instead: 
+
+\verbatim
+from lsst.mwi.logging import DualLog, Log
+
+filethreshold = Log.DEBUG
+screenthreshold = Log.WARN
+mylog = DualLog("test.log", filethreshold, screenthreshold)
+
+mylog.log(Log.INFO, "starting test")
+\endverbatim
+
+You probably will want to make this the default log so that your
+classes can access it via getDefaultLog(). To do this, use
+createDefaultLog(): 
+
+\verbatim
+from lsst.mwi.logging import DualLog, Log
+
+filethreshold = Log.DEBUG
+screenthreshold = Log.WARN
+DualLog.createDefaultLog("test.log", filethreshold, screenthreshold)
+mylog = Log.getDefaultLog()
+
+mylog.log(Log.INFO, "starting test")
+\endverbatim
+
+In the both examples, the file will accept messages with a DEBUG
+loudness or louder, while the screen will only get WARN and FATAL
+messages. 
+
+Note that the logging framework actually uses two different
+thresholds. One is the threshold we've seen so far: it controls what
+messages get received from the client. There is also a second
+threshold that sits in front of the log destination. Thus each
+destination can have its own threshold. Remember, though, it the
+client-side threshold blocks a message, it will not get recorded
+anywhere, regardless of the destination thresholds. 
+
+\subsection secLogHTProp Including Properties
+
+You can tag your log messages with arbitrary data properties. To do
+this, you use a streaming interface. For example, in C++: 
+
+\verbatim
+    using lsst::mwi::Rec;
+    using lsst::mwi::Prop;
+
+    Rec(mlog, Log::WARN) << "No convergence reached"
+                         << Prop("iterations", 541)
+                         << Prop("rms", 0.0032)
+                         << Rec::endr;
+\verbatim
+
+In python:
+
+\verbatim
+    from lsst.mwi.logging import LogRec
+
+    Rec(mlog, Log.WARN) << "No convergence reached"
+                        << Prop("iterations", 541)
+                        << Prop("rms", 0.0032)
+                        << Rec.endr;
+\endverbatim
+
+    \note If you write a little test python script that
+    uses the above example, you may not actually see the comments
+    getting printed. This is because the default Log has been
+    configured only to print the text part of the message to the
+    screen. The default Log in this case is a ScreenLog. If you create
+    one of these your self (see previous section), you can display the
+    message by using its setScreenVerbose() function: 
+\verbatim
+        mylog = ScreenLog()
+        mylog.setScreenVerbose(True)
+\endverbatim
+    The DualLog class supports this as well.
+
+You can also send a whole PropertySet along with a log message. In
+C++: 
+
+\verbatim
+    PropertySet ps;
+    // set the contents of the PropertySet
+
+    Rec(mlog, Log::INFO) << "switching algorithms" << ps << Rec::endr;
+\endverbatim
+
+In python, a dictionary will stand in for a PropertySet:
+
+\verbatim
+    ps = { "iterations": 458, "rms": 0.00245, "converged": False } 
+    Rec(mlog, Log.INFO) << "working with properties" << ps << Rec.endr;
+\endverbatim
+
+Note that it is possible to send properties of any type to the log
+without failure; however, only a limited set of types will actually
+get recorded. These types include: int, long, long long, float,
+double, bool, and string.  
+
+*/
+}}}

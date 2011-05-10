@@ -1,0 +1,37 @@
+/**
+\mainpage LSST Exceptions
+
+\section secIntro Introduction
+
+LSST C++ exceptions are designed to automatically provide information about
+where the exception was thrown from.  Exception subclasses can be defined to
+more precisely delineate their causes.  Context information can be provided
+through a simple message or, in rare cases, additional instance variables
+within exception subclasses; caught and rethrown exceptions can have additional
+context information appended.
+
+\section secPython Python Interface
+
+Python wrappers for the C++ exception objects are generated using SWIG.  Any
+package defining new exception subclasses must import
+lsst/pex/exceptions/exceptionsLib.i in its SWIG configuration, as well as
+including the exception subclass header file.
+
+The new SWIGged exception class derives from the lsst.pex.exceptions.Exception
+class but will not derive from the Python Exception base class. Instead,
+exceptions deriving from this Exception class are caught (in p_lsstSwig.i) and
+transformed into lsst.pex.exceptions.LsstCppException instances. The
+LsstCppException class derives from LsstException (usable by Python code),
+which in turn derives from the Python Exception base class. The SWIG proxy for
+the customized exception class is accessible as the args[0] item in the
+LsstCppException.
+
+Other exceptions thrown from C++ are raised as Python RuntimeErrors. No attempt
+is made to move the C++ traceback information into a Python traceback object. 
+
+None of the exceptions defined in this package should be used from Python code.
+Pure Python exceptions should be used, either deriving from the normal Python
+Exception base class or, if needed, the lsst.pex.exceptions.LsstException base
+class.
+
+*/

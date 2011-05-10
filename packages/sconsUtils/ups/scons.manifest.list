@@ -1,0 +1,2 @@
+>merge pkg=sconsDistrib
+>self installFile=sconsUtils.bld installDir=sconsUtils/1.20

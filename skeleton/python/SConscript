@@ -1,0 +1,10 @@
+# -*- python -*-
+Import('env')
+
+srcOut = []
+for srcIn in Glob("#pysrc/*.cc"):
+    srcOut.extend(env.BPDox(srcIn))
+
+env.Depends(srcOut, "#doc")
+
+env.LoadableModuleIncomplete("_{product}", src=LIBS=env.getLibs("main python"))

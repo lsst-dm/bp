@@ -1,0 +1,39 @@
+# -*- python -*-
+
+#
+# Setup our environment
+#
+import os.path
+import lsst.scons.SConsUtils as scons
+
+env = scons.makeEnv("{product}", r"$HeadURL$")
+
+env.Append(CXXFLAGS="-std=c++0x")
+
+#
+# Build/install things
+#
+targets = {}
+for d in Split("doc lib python tests examples"):
+    s = os.path.join(d, "SConscript")
+    if os.path.exists(s):
+        targets[d] = SConscript(s)
+
+env['IgnoreFiles'] = r"(~$|\.pyc$|^\.svn$|\.o$)"
+
+env.InstallLSST(
+    env["prefix"], 
+    [d for d in ("bin", "doc", "etc", "examples", "include", "lib", "ups")
+     if os.path.exists(d)]
+    )
+
+scons.CleanTree(r"*~ core *.so *.os *.o *.pyc")
+
+#
+# Build TAGS files
+#
+files = scons.filesToTag()
+if files:
+    env.Command("TAGS", files, "etags -o $TARGET $SOURCES")
+
+env.Declare()

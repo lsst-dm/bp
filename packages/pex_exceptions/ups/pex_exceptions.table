@@ -1,0 +1,9 @@
+setupRequired(base == bp)
+setupRequired(bputils == bp)
+setupRequired(doxygen >= 1.5.4)
+
+envAppend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
+envAppend(DYLD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
+
+envAppend(PYTHONPATH, ${PRODUCT_DIR}/python)
+envAppend(BPDOX_PATH, ${PRODUCT_DIR}/doc/xml)

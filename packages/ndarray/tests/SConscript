@@ -1,0 +1,15 @@
+import os
+import sys
+import lsst.scons.tests
+Import("env")
+
+cc_tests = ["ndarray.cc", "ndarray-eigen.cc", "ndarray-fft.cc", "ndarray-tables.cc"]
+
+for src in cc_tests:
+    env.Program(src, LIBS=env.getLibs("self test"))
+
+#
+# Tests
+#
+tests = lsst.scons.tests.Control(env, verbose = True)
+tests.run("*.cc")

@@ -17,4 +17,4 @@ tests = lsst.scons.tests.Control(env, verbose=True)
 tests.run("Exception_1.cc")
 for target in tests.run("Exception_*.py"):
     env.Depends(target, failerLib)
-    env.Depends(target, "../python/lsst/pex/exceptions/_exceptions.so")
+    env.Depends(target, "#python")

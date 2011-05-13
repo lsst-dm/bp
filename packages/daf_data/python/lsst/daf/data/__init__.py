@@ -23,6 +23,6 @@
 """Interface to lsst::daf::data classes.
 """
 import lsst.bputils
-from . import _data
+from . import _daf_data
 
-lsst.bputils.rescope(_data, globals(), ignore=())
+lsst.bputils.rescope(_daf_data, globals(), ignore=())

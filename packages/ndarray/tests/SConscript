@@ -1,7 +1,7 @@
-import os
-import sys
+# -*- python -*-
+Import('env')
+
 import lsst.scons.tests
-Import("env")
 
 cc_tests = ["ndarray.cc", "ndarray-eigen.cc", "ndarray-fft.cc", "ndarray-tables.cc"]
 

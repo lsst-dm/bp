@@ -1,25 +1,30 @@
 # -*- python -*-
+
 #
 # Setup our environment
 #
-import glob, os.path, re, os
+import os.path
 import lsst.scons.SConsUtils as scons
 
-env = scons.makeEnv("pex_policy",
-                    r"$HeadURL$",
-                    scons.ConfigureDependentProducts("pex_policy"))
+env = scons.makeEnv("pex_policy", r"$HeadURL$")
 
 env.Append(CXXFLAGS="-std=c++0x")
 
 #
 # Build/install things
 #
-for d in Split("lib tests python/lsst/pex/policy doc"):
-    SConscript(os.path.join(d, "SConscript"))
+for d in Split("doc lib python tests examples"):
+    s = os.path.join(d, "SConscript")
+    if os.path.exists(s):
+        SConscript(s)
 
 env['IgnoreFiles'] = r"(~$|\.pyc$|^\.svn$|\.o$)"
 
-env.InstallLSST(env["prefix"], ["python", "etc", "include", "lib", "doc", "ups"])
+env.InstallLSST(
+    env["prefix"], 
+    [d for d in ("bin", "doc", "etc", "examples", "include", "lib", "ups")
+     if os.path.exists(d)]
+    )
 
 scons.CleanTree(r"*~ core *.so *.os *.o *.pyc")
 
@@ -31,7 +36,3 @@ if files:
     env.Command("TAGS", files, "etags -o $TARGET $SOURCES")
 
 env.Declare()
-env.Help("""
-Pipeline Execution: Policy
-""")
-

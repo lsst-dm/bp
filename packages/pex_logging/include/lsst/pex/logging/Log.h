@@ -697,10 +697,10 @@ public:
     /**
      * record a string comment into this message
      */
-    LogRec& operator<<(const std::string& comment); /* {
+    LogRec& operator<<(const std::string& comment) {
         addComment(comment);
         return *this;
-    }  */
+    }
 
     /**
      * record a string comment into this message

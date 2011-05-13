@@ -1,10 +1,10 @@
-from . import _base
+from . import _daf_base
 import lsst.bputils
 import lsst.pex.exceptions
 
-lsst.bputils.rescope(_base, globals(), names=("Citizen", "DateTime", "Persistable"))
+lsst.bputils.rescope(_daf_base, globals(), names=("Citizen", "DateTime", "Persistable"))
 
-@lsst.bputils.extend(_base.PropertySet)
+@lsst.bputils.extend(_daf_base.PropertySet)
 class PropertySet:
 
     def get(self, name):
@@ -102,7 +102,7 @@ class PropertySet:
             raise lsst.pex.exceptions.Exception, \
                 'Unknown value type for %s: %s' % (name, type(exemplar))
 
-@lsst.bputils.extend(_base.PropertyList)
+@lsst.bputils.extend(_daf_base.PropertyList)
 class PropertyList:
 
     def get(self, name):

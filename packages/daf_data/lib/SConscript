@@ -1,4 +1,4 @@
 # -*- python -*-
 Import('env')
 
-env.SharedLibrary("daf_data", Glob("#src/*.cc"), LIBS=env.getLibs("self"))
+env.SharedLibrary(env["eups_product"], Glob("#src/*.cc") + Glob("#src/*/*.cc"), LIBS=env.getLibs("self"))

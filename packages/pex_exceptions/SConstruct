@@ -1,26 +1,32 @@
 # -*- python -*-
+
 #
 # Setup our environment
 #
-import glob, os.path, re, os
+import os.path
 import lsst.scons.SConsUtils as scons
 
-env = scons.makeEnv(
-    "pex_exceptions",
-    r"$HeadURL$",
-    scons.ConfigureDependentProducts("pex_exceptions"))
+env = scons.makeEnv("pex_exceptions", r"$HeadURL$")
+
+env.Append(CXXFLAGS="-std=c++0x")
 
 #
 # Build/install things
 #
-for d in Split("examples lib python/lsst/pex/exceptions tests doc"):
-    SConscript(os.path.join(d, "SConscript"))
+for d in Split("doc lib python tests examples"):
+    s = os.path.join(d, "SConscript")
+    if os.path.exists(s):
+        SConscript(s)
 
 env['IgnoreFiles'] = r"(~$|\.pyc$|^\.svn$|\.o$)"
 
-env.InstallLSST(env['prefix'], ["python", "etc", "include", "lib", "doc", "ups"])
+env.InstallLSST(
+    env["prefix"], 
+    [d for d in ("bin", "doc", "etc", "examples", "include", "lib", "ups")
+     if os.path.exists(d)]
+    )
 
-scons.CleanTree(r"*~ core *.so *.os *.o")
+scons.CleanTree(r"*~ core *.so *.os *.o *.pyc")
 
 #
 # Build TAGS files
@@ -30,7 +36,3 @@ if files:
     env.Command("TAGS", files, "etags -o $TARGET $SOURCES")
 
 env.Declare()
-env.Help("""
-LSST Pipeline Execution Exceptions package
-""")
-

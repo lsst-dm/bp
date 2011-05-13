@@ -1,6 +1,5 @@
 # -*- python -*-
 Import('env')
-import os
 
 constAwareLib = env.LoadableModuleIncomplete("const_aware_mod", "const_aware_mod.cpp",
                                              LIBS=env.getLibs("main python"))
@@ -21,7 +20,6 @@ testLib = env.LoadableModuleIncomplete("test_mod", "test_mod.cpp",
 # Tests
 #
 import lsst.scons.tests
-import os
 
 tests = lsst.scons.tests.Control(env, verbose=True)
 

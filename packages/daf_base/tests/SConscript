@@ -1,16 +1,14 @@
 # -*- python -*-
-Import("env")
+Import('env')
+
+import lsst.scons.tests
 
 for src in Glob("*.cc"):
     env.Program(src, LIBS=env.getLibs("main test"))
 
-#
-# Tests
-#
-import lsst.scons.tests
+tests = lsst.scons.tests.Control(env, ignoreList=[], verbose=True)
 
-tests = lsst.scons.tests.Control(env, verbose = True)
 tests.run("*.cc")
 
 for target in tests.run("*.py"):
-     env.Depends(target, "#python/lsst/daf/base/_base%s" % (env['LDMODULESUFFIX']))
+    env.Depends(target, "#python")

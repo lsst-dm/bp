@@ -1,7 +1,4 @@
-setupRequired(base == bp)
 setupRequired(boost >= 1.44)
-setupRequired(python >= 2.7)
-setupRequired(numpy >= 1.5)
 setupRequired(eigen == 2.0.15)
 setupOptional(fftw >= 3.1.2+1)
 setupOptional(doxygen)

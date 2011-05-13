@@ -1,5 +1,6 @@
 setupRequired("boost == 1.46.1+jb0")
 setupRequired("scons == bp")
+setupRequired("doxygen")
 
 envAppend(PYTHONPATH, ${PRODUCT_DIR}/python)
-
+envAppend(BPDOX_PATH, ${PRODUCT_DIR}/doc/xml)

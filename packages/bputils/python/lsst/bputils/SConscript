@@ -1,4 +1,0 @@
-# -*- python -*-
-Import("env")
-
-env.LoadableModuleIncomplete("_bputils", Glob("#pysrc/*.cc"), LIBS=env.getLibs("main python"))

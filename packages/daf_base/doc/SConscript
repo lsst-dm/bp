@@ -2,4 +2,5 @@
 Import('env')
 
 config = env.DoxygenConfig("doxygen.conf.in")
-doc = env.Doxygen(config)
+
+env.Doxygen(config)

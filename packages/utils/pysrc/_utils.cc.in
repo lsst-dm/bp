@@ -15,7 +15,7 @@ bp::str pyGuessSvnVersion(std::string const& headURL) {
     return bp::str(result);
 }
 
-void declareUtils() {
+void declare() {
     bp::import("lsst.pex.exceptions");
     %%auto_function(demangleType)%%;
     %%auto_function(raRadToStr)%%;
@@ -39,5 +39,5 @@ void declareUtils() {
 BOOST_PYTHON_MODULE(_utils) {
     lsst::bputils::registerConversions();
     bp::import("lsst.pex.exceptions");
-    lsst::utils::declareUtils();
+    lsst::utils::declare();
 }

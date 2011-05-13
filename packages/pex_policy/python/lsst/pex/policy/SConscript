@@ -1,8 +1,0 @@
-# -*- python -*-
-Import("env")
-
-src = env.BPDox("#pysrc/_policy.cc.in", "daf_base", "pex_exceptions")
-
-env.Depends(src, "#doc/xml/pex_policy")
-
-env.LoadableModuleIncomplete("_policy", src, LIBS=env.getLibs("main python"))

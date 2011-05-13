@@ -1,6 +1,4 @@
 # -*- python -*-
 Import('env')
-import os
 
-env.SharedLibrary('pex_logging', Glob("#src/*.cc") + Glob("#src/threshold/*.cc"), LIBS=env.getLibs("self"))
-
+env.SharedLibrary(env["eups_product"], Glob("#src/*.cc") + Glob("#src/*/*.cc"), LIBS=env.getLibs("self"))

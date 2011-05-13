@@ -20,10 +20,10 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from . import _logging
+from . import _pex_logging
 import lsst.bputils
 
-lsst.bputils.rescope(_logging, globals(), ignore=("LogRecord", "Log", "LogRec", "Debug"))
+lsst.bputils.rescope(_pex_logging, globals(), ignore=("LogRecord", "Log", "LogRec", "Debug"))
 
 class Prop:
     """package a property to send it to a LogRecord"""
@@ -34,7 +34,7 @@ class Prop:
     def addToRec(self, rec):
         rec.addProperty(self.name, self.value)
 
-@lsst.bputils.extend(_logging.LogRecord)
+@lsst.bputils.extend(_pex_logging.LogRecord)
 class LogRecord:
     
     def addProperty(self, name, val):
@@ -123,7 +123,7 @@ class LogRecord:
         else:
             raise lsst.pex.exceptions.InvalidParameterException("unsupported property type for logging: %s(%s)" % (name, type(val)))
 
-@lsst.bputils.extend(_logging.Log)
+@lsst.bputils.extend(_pex_logging.Log)
 class Log:
 
     def _log(self, verb, *args):
@@ -154,10 +154,10 @@ class Log:
 
 getDefaultLog = Log.getDefaultLog
 
-class LogRec(_logging.LogRec):
+class LogRec(_pex_logging.LogRec):
 
     def __init__(self, *args, **kwds):
-        _logging.LogRec.__init__(self, *args, **kwds)
+        _pex_logging.LogRec.__init__(self, *args, **kwds)
         if isinstance(args[0], LogRec):
             self._theLog = args[0]._theLog
         else:
@@ -193,7 +193,7 @@ class LogRec(_logging.LogRec):
 endr = LogRec.endr
 Rec = LogRec
 
-class Debug(_logging.Debug):
+class Debug(_pex_logging.Debug):
 
     default_max_debug = None
 
@@ -203,9 +203,9 @@ class Debug(_logging.Debug):
         if verbosity is None:
             verbosity = -1 * Log.INHERIT_THRESHOLD
         if parent is not None:
-            _logging.Debug.__init__(self, parent, name=name, verbosity=verbosity)
+            _pex_logging.Debug.__init__(self, parent, name=name, verbosity=verbosity)
         else:
-            _logging.Debug.__init__(self, name=name, verbosity=verbosity)
+            _pex_logging.Debug.__init__(self, name=name, verbosity=verbosity)
 
 def version():
     """

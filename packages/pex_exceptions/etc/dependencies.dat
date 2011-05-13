@@ -1,4 +1,0 @@
-"boost", "boost/current_function.hpp"
-"boost_test", "boost/test/unit_test.hpp", "boost_unit_test_framework:C++;test"
-bputils:
-"bputils", "lsst/bputils/exceptions.h", "bputils:C++;python"

@@ -10,6 +10,7 @@ from SCons.Script.SConscript import SConsEnvironment
 SCons.progress_display = SCons.Script.Main.progress_display
 import stat
 import sys
+import imp
 from types import *
 from . import svn
 
@@ -77,50 +78,6 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
         "%P/%f/deploy/%p/%v"
     @endverbatim
     
-    Describing Dependencies
-
-    The dependencies argument allows you to describe how this product depends
-    on other products.  Our SCons scripts will use this information to actually
-    check that the required components are visible to the build process before
-    actually proceeding with the build.  The dependencies argument is a list
-    of lists.  That is, it is a list in which each element describes a
-    dependency on another product; that dependency is described with a list of
-    up to 4 elements:
-
-    @verbatim
-      0.  the EUPS name of the dependent product.  It is assumed that the
-          user has already loaded the product into the environment via the
-          EUPS setup command (i.e. "setup product") so that there is an
-          environment variable, product_DIR, that provides the directory where
-          the product is installed. 
-      
-      1.  the name of one or more required include files, the last of which
-          being one that the product should provide.
-          If more than one file is given, they can be provided either as a 
-          Python list or a space-delimited string.  As part of its verification,
-          SCons will attempt use the last include file listed in a test
-          compilation.  The preceding include files in the list are assumed
-          to be required to successfully compile the last one.  If file
-          successfully compiles, it is assumed that all other include files
-          needed from the product will also be available.
-          
-      2.  the name of one or more required libraries, the last of which being
-          one that the product should provide.
-          If more than one file is given, they can be provided either as a 
-          Python list or a space-delimited string.  As part of its verification,
-          SCons will attempt to link against the last library in a test
-          compilation.  Sometimes it is necessary to indicate the language
-          support required; if so, the last library should by appended with
-          ':lang' where lang is the language (e.g. C++, C); the default
-          language is C.  
-
-      3.  the name of a symbol (e.g. a function name) from the required library
-          given in the element 2.  The test compilation and link will test to
-          make sure that this symbol can be found during the linking stage.  If
-          this is successful, it is assumed that all other symbols from all
-          required libraries from the product will be available.
-    @endverbatim
-
     The latter elements of a dependency description are optional.  If less
     information is provided, less is done in terms of verification.  Generally,
     a symbol will need to be provided to verify that a required library is
@@ -141,14 +98,6 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
                              not provided, the release version will be set to
                              unknown.  See "Identifying the Product" above for 
                              more details.
-    @param dependencies   a description of dependencies on other products
-                             needed to build this product that should be
-                             verified.  The value is a list with each element 
-                             describing the dependency on another product.
-                             Each dependency is described with a list of up to
-                             four elements.  See "Describing Dependencies"
-                             above for an explanation of the dependency
-                             description.
     @param eups_product_path  the relative path to the default installation
                              directory as format string.  Use this if the
                              product should be installed in a subdirectory
@@ -169,7 +118,7 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
     # We made the changes needed for scons 1.2; some (Option -> Variable) are not backwards compatible
     #
     if False:                           # apparently we're using trunk sconsUtils in the buildbot
-        EnsureSConsVersion(1, 2, 0)
+        EnsureSConsVersion(2, 0, 1)
     #
     # We don't usually want a traceback at the interactive prompt
     # XXX This hook appears to be ignored by scons. Why?
@@ -202,26 +151,6 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
         ('baseversion', 'Specify the current base version', None),
         ('noOptFiles', "Specify a list of files that should NOT be optimized", None)
         )
-
-    products = []
-    for productProps in dependencies:
-        products += [productProps[0]]
-    products.sort()
-
-    for p in products:
-        if p.startswith("boost"):
-            p = "boost"
-        pdir = ProductDir(p)
-        if not pdir:
-            continue
-
-        opts.AddVariables(
-            PathVariable(p, "Specify the location of %s" % p, pdir),
-            PathVariable(p + "Include", "Specify the location of %s's include files" % p,
-                       pdir and os.path.isdir(pdir + "/include") and pdir + "/include" or None),
-            PathVariable(p + "Lib", "Specify the location of %s's libraries" % p,
-                       pdir and os.path.isdir(pdir + "/lib") and pdir + "/lib" or None),
-            )
 
     toolpath = []
     if os.path.exists("python/lsst/scons/SConsUtils.py"): # boostrapping sconsUtils
@@ -263,7 +192,9 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
               'TMPDIR' : TMPDIR,
               'BPDOX_PATH' : BPDOX_PATH,
               }
+
     # Add all EUPS directories
+    upsDirs = []
     for k in filter(lambda x: re.search(r"_DIR$", x), os.environ.keys()):
         p = re.search(r"^(.*)_DIR$", k).groups()[0]
         try:
@@ -273,7 +204,7 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
         if os.environ.has_key(varname):
             ourEnv[varname] = os.environ[varname]
             ourEnv[k] = os.environ[k]
-
+            upsDirs.append(os.path.join(os.environ[k], "ups"))
     env = Environment(ENV = ourEnv, variables=opts,
 		      tools = ["default", "doxygen"],
 		      toolpath = toolpath
@@ -283,12 +214,11 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
     env['eups_product'] = eups_product
     Help(opts.GenerateHelpText(env))
 
-    # Assume that this product has a library of the same name
     # The first level of the libs dict is the "target": we have separate
     # lists for main libraries, Python modules, and C++-coded unit tests.
     env.libs = {}
     for target in ("main", "python", "test"):
-        env.libs[target] = {eups_product: [eups_product],}
+        env.libs[target] = []
 
     #
     # We don't want "lib" inserted at the beginning of loadable module names;
@@ -349,10 +279,10 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
         del env['flavor']
     except KeyError:
         pass
+
     #
     # Check arguments
     #
-    errors = []
     errorStr = ""
     #
     # Process otherwise unknown arguments.  If setenv is true,
@@ -365,7 +295,8 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
         for key in ARGUMENTS.keys():
             errorStr += " %s=%s" % (key, ARGUMENTS[key])
         if errorStr:
-            errors += ["Unprocessed arguments:%s" % errorStr]
+            sys.stderr.write("Unprocessed arguments:%s\n" % errorStr)
+
     #
     # We need a binary name, not just "Posix"
     #
@@ -497,10 +428,7 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
     import socket
     if socket.htons(1) != 1:
         env.Append(CCFLAGS = ['-DLSST_LITTLE_ENDIAN=1'])
-    #
-    # Check for dependencies in swig input files
-    #
-    env.SwigDependencies();
+
     #
     # If we're linking to libraries that themselves linked to
     # shareable libraries we need to do something special.
@@ -508,15 +436,6 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
         os.environ.has_key("LD_LIBRARY_PATH")):
         env.Append(LINKFLAGS = ["-Wl,-rpath-link"])
         env.Append(LINKFLAGS = ["-Wl,%s" % os.environ["LD_LIBRARY_PATH"]])
-    #
-    # Process dependencies
-    #
-    if dependencies:
-        for productProps in dependencies:
-            product = productProps[0]
-            for target in ("main", "python", "test"):
-                if not env.libs[target].has_key(product):
-                    env.libs[target][product] = []
 
     #
     # A list of doxygen tag files from dependent products with a doc subdirectory.
@@ -530,213 +449,22 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
 
     env['CPPPATH'] = []
     env['LIBPATH'] = []
-    if not env.GetOption("clean") and not env.GetOption("help") and dependencies:
-        for productProps in dependencies:
-            while len(productProps) < 4:     # allow the user to omit values
-                productProps += [""]
-            if len(productProps) > 4:
-                print >> sys.stderr, "Ignoring extra values while configuring %s: %s" % \
-                      (productProps[0], " ".join(productProps[4:]))
-
-            (product, incfiles, libs, symbol) = productProps[0:4]
-            #
-            # Special case python itself
-            #
-            if product == "python":
-                env.CheckPython()
-            #
-            # Did they specify a directory on the command line? We accept:
-            #   product{,Lib,Include}=DIR
-            #
-            if product.startswith("boost"):
-                (topdir, incdir, libdir) = searchEnvForDirs(env, "boost")
-            else:
-                (topdir, incdir, libdir) = searchEnvForDirs(env, product)
-
-            #
-            # See if pkgconfig knows about us.  ParseConfig sets values in env for us
-            #
-            if not ProductDir(product): # don't override EUPS
-                try:
-                    env.PkgConfigEUPS(product)
-                    pkgConfig = True
-                except OSError:
-                    pkgConfig = False
-            #
-            # Get things from the arguments (now pushed into env by Environment(..., opts=...));
-            # the default values came from EUPS if available
-            #
-            if topdir:
-                success = True          # they said they knew what was going on.  If they didn't
-                                        # specify incfiles/libs, we'll have to trust them
-
-                doxytagFile = os.path.join(topdir, "doc", product + ".tag")
-                if os.path.exists(doxytagFile):
-                    env["DOXYGEN_TAGS"].append(doxytagFile)
-
-                doxyincFile = os.path.join(topdir, "doc", product + ".inc")
-                if os.path.exists(doxyincFile):
-                    env["DOXYGEN_INCLUDES"].append(doxyincFile)
-
-                if incfiles:
-                    try:
-                        if env.CheckHeaderGuessLanguage(incdir, incfiles) and incdir:
-                            env.Replace(CPPPATH = env['CPPPATH'] + [incdir])
-                    except RuntimeError, msg:
-                        errors += [str(msg)]
-                        success = False
-                if not (env.GetOption("no_exec") or env.GetOption("help")) and libs:
-                    conf = env.Clone(LIBPATH = env['LIBPATH'] + [libdir]).Configure()
-                    try:
-                        libs, lang = libs.split(":")
-                    except ValueError:
-                        lang = "C"
-                    try:
-                        lang, libTarget = lang.split(";")
-                    except ValueError:
-                        libTarget = "main"
-
-                    if libTarget == "python":
-                        if not env.libs["python"].has_key("python"):
-                            env.CheckPython()
-                        env.libs["python"][product] += env.libs["python"]["python"]
-
-                    if product == "numpy" or product == "pycore":
-                        import numpy
-                        incdir = numpy.get_include()
-
-                    libs = Split(libs)
-                    for lib in libs[:-1]:
-                        # Allow for boost messing with library names. Sigh.
-                        lib = mangleLibraryName(env, libdir, lib)
-
-                        if libTarget == "python":
-                            print "Using library %s from %s." % (lib, libdir)
-                            env.libs["python"][product] += [lib]
-                        elif conf.CheckLib(lib, language=lang):
-                            env.libs[libTarget][product] += [lib]
-                        else:
-                            errors += ["Failed to find/use %s library" % (lib)]
-                            success = False
-                        
-                    lib = mangleLibraryName(env, libdir, libs[-1])
-
-                    if libTarget == "python":
-                        print "Using library %s from %s." % (lib, libdir)
-                        if libdir not in env['LIBPATH']:
-                            env.Replace(LIBPATH = env['LIBPATH'] + [libdir])
-                            Repository(libdir)
-                        env.libs["python"][product] += [lib]
-                    elif conf.CheckLib(lib, symbol, language=lang):
-                        if libdir not in env['LIBPATH']:
-                            env.Replace(LIBPATH = env['LIBPATH'] + [libdir])
-                            Repository(libdir)
-                        env.libs[libTarget][product] += [lib]
-                    else:
-                        errors += ["Failed to find/use %s library in %s" % (lib, libdir)]
-                        success = False
-                    conf.Finish()
-
-                if success:
-                    continue
-            elif incfiles or libs:       # Not specified; see if we got lucky in the environment
-                success = True
-                
-                if incfiles:
-                    try:
-                        if incdir and env.CheckHeaderGuessLanguage(incdir, incfiles):
-                            env.Replace(CPPPATH = env['CPPPATH'] + [incdir])
-                    except RuntimeError, msg:
-                        errors += [str(msg)]
-                        success = False
-
-                if libs:
-                    conf = env.Configure()
-                    for lib in Split(libs):
-                        try:
-                            lib, lang = lib.split(":")
-                        except ValueError:
-                            lang = "C"
-                        try:
-                            lang, libTarget = lang.split(";")
-                        except ValueError:
-                            libTarget = "main"
-                        if libTarget:
-                            libTarget = libTarget.strip().lower()
-
-                        lib = mangleLibraryName(env, libdir, lib)
-
-                        if libTarget == "python":
-                            if not env.libs["python"].has_key("python"):
-                                env.CheckPython()
-                            env.libs["python"][product] += env.libs["python"]["python"]
-                            print "Using library %s from %s." % (lib, libdir)
-                            env.libs["python"][product] += [lib]
-                        elif conf.CheckLib(lib, symbol, language=lang):
-                            env.libs[libTarget][product] += [lib]
-                        else:
-                            success = False
-                    conf.Finish()
-
-                if success:
-                    continue
-            elif pkgConfig:
-                continue                # We'll trust them here too; they did provide a pkg-config script
-            else:
-                pass                    # what can we do? No PRODUCT_DIR, no product-config,
-                                        # no include file to find
-
-            if topdir:
-                errors += ["Failed to find a valid version of %s --- check config.log" % (product)]
-            else:
-                errors += ["Failed to find a valid %s --- do you need to setup %s or specify %s=DIR?" % \
-                           (product, product, product)]
-        
-    if errors:
-        msg = "\n".join(errors)
-        if traceback:
-            raise RuntimeError, msg
-        else:
-            sys.excepthook(RuntimeError, msg, None)
-    #
-    # If we called ConfigureDependentProducts, automatically include all dependencies which declare
-    # libraries in env.libs[eups_product]
-    if usedConfigureDependentProducts and dependencies:
-        for productProps in dependencies:
-            product = productProps[0]
-            for target in ("main", "python", "test"):
-                if env.libs[target].has_key(product):
-                    env.libs[target][eups_product] += env.libs[target][product]
 
     #
-    # include TOPLEVEL/include while searching for .h files;
-    # include TOPLEVEL/lib while searching for libraries
+    # Recursively configure dependencies.
     #
-    for d in ["include"]:
-        if os.path.isdir(d):
-            env.Append(CPPPATH = Dir(d))
-    if os.path.isdir("lib"):
-	env.Append(LIBPATH = Dir("lib"))
-    #
+    if not env.GetOption("clean") and not env.GetOption("help"):
+        env = configureProducts(env, upsDirs)
+
     Export('env')
-    #
-    # env.Glob is an scons >= 0.98 way of asking if a target (will) exist
-    #
-    try:
-        env.Glob                        # >= 0.98
-    except AttributeError, e:
-        def _Glob(*args):
-            return ["dummy"]
-        env.Glob = _Glob
-
     return env
 
 makeEnv = MakeEnv                       # backwards compatibility
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-def getLibs(env, targets="main", products=None):
-    """Recursively get the libraries a package is linked with, with duplicates removed.
+def getLibs(env, targets="main"):
+    """Get the libraries the package should be linked with.
 
     Arguments:
        targets --- A string containing whitespace-delimited targets.  Standard
@@ -744,104 +472,28 @@ def getLibs(env, targets="main", products=None):
                    A special virtual target "self" can be provided, returning
                    the results of targets="main" with the eups_target library
                    removed.
-       products -- A string contained whitespace-delimited products.  Defaults
-                   to env["eups_product"].
 
     Typically, main libraries will be linked with LIBS=getLibs("self"),
     Python modules will be linked with LIBS=getLibs("main python") and
     C++-coded test programs will be linked with LIBS=getLibs("main test")
-    """               
-    if products is None:
-        products = (env["eups_product"],)
-    else:
-        products = products.split()
-    
+    """
     libs = []
     removeSelf = False
     for target in targets.split():
         if target == "self":
-            d = env.libs["main"]
+            target = "main"
             removeSelf = True
-        else:
-            d = env.libs[target]
-        for product in products:
-            for lib in d[product]:
-                if lib not in libs:
-                    libs.append(lib)
+        for lib in env.libs[target]:
+            if lib not in libs:
+                libs.append(lib)
     if removeSelf:
         try:
             libs.remove(env["eups_product"])
-        except LookupError:
+        except ValueError:
             pass
     return libs
 
 SConsEnvironment.getLibs = getLibs
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-def ConfigureDependentProducts(productName, dependencyFilename=None, alreadyConfigured=None):
-    """Process a product's dependency file, returning a list suitable for passing to SconsUtils.makeEnv
-
-E.g.
-    env = scons.makeEnv("afw",
-                        r"$HeadURL: svn+ssh://svn.lsstcorp.org/DMS/afw/trunk/SConstruct $",
-                        scons.ConfigureDependentProducts("afw"))
-"""
-    if not dependencyFilename:
-        dependencyFilename = "dependencies.dat"
-
-    if alreadyConfigured is None:
-        alreadyConfigured = set()
-
-    productDir = eups.productDir(productName)
-    if not productDir:
-        raise RuntimeError, ("%s is not setup" % productName)
-
-    dependencies = os.path.join(productDir, "etc", dependencyFilename)
-
-    try:
-        fd = open(dependencies)
-    except:
-        raise RuntimeError, ("Unable to lookup dependencies for %s in %s" % (productName, dependencies))
-
-    dependencies = []
-
-    for line in fd.readlines():
-        if re.search(r"^\s*#", line):
-            continue
-
-        mat = re.search(r"^(\S+)\s*:\s*(\S*)\s*$", line)
-        if mat:
-            dependencies += ConfigureDependentProducts(mat.group(1), mat.group(2), alreadyConfigured)
-            continue
-        #
-        # Split the line into "" separated fields
-        #
-        line = re.sub(r"(^\s*|\s*,\s*|\s*$)", "", line) # remove whitespace and commas in the config file
-        items = [f for f in re.split(r"['\"]", line) if f]
-        if items[0] not in alreadyConfigured:
-            dependencies.append(items)
-            alreadyConfigured.add(items[0])
-    #
-    # Set a variable that tells us to automatically include this products in env.libs[*][eups_produc]
-    #
-    global usedConfigureDependentProducts
-    usedConfigureDependentProducts = True
-
-    return dependencies
-
-def getDependentProductIncludes(productName, dependencyFilename=None):
-    """Return a list of products that need to be included (i.e. ones that configured an include file)"""
-
-    dependencies = ConfigureDependentProducts(productName, dependencyFilename)
-
-    incs = {}
-    for productProps in dependencies:
-        product = productProps[0]
-        if len(productProps) >= 2:
-            incs[eups_product] = 1
-
-    return sorted(incs.keys())
 
 #=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -930,43 +582,6 @@ def LsstVariables(files=None):
         files.append("buildOpts.py")
 
     return Variables(files)
-
-#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-def CheckHeaderGuessLanguage(self, incdir, incfiles):
-    """Like CheckHeader, but guess the proper language"""
-
-    incfiles = Split(incfiles)
-    
-    if re.search(r"\.h$", incfiles[-1]):
-	# put C++ first; if the first language fails then the scons
-	# cache seems to have trouble.  Besides, most C++ will compile as C
-        languages = ["C++", "C"]
-    elif re.search(r"(\.hpp|(^|/)[^./]+)$", incfiles[-1]):
-        languages = ["C++"]
-    else:
-        raise RuntimeError, "Unknown header file suffix for file %s" % (incfiles[-1])
-
-    if self.GetOption("no_exec"):
-        return False
-    
-    for lang in languages:
-        conf = self.Clone(CPPPATH = self['CPPPATH'] + [incdir]).Configure()
-        foundHeader = conf.CheckHeader(incfiles, language=lang)
-        conf.Finish()
-
-        if foundHeader:
-            if incdir in self['CPPPATH']:
-                return False            # no need for another copy
-            else:
-                return True
-
-    if os.path.isfile(os.path.join(incdir, incfiles[-1])):
-        raise RuntimeError, "Failed to compile test program using %s" % os.path.join(incdir, incfiles[-1])
-    else:
-        raise RuntimeError, "Failed to find %s in %s" % (incfiles[-1], incdir)
-
-SConsEnvironment.CheckHeaderGuessLanguage = CheckHeaderGuessLanguage
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -1058,63 +673,6 @@ def mangleLibraryName(env, libdir, lib):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-def searchArgumentsForDirs(ARGUMENTS, product):
-    """If product, productInclude, or productLib is set in ARGUMENTS,
-    return a triple of all three values, and delete the ARGUMENTS"""
-    product_include = product + "Include"
-    product_lib = product + "Lib"
-    #
-    # Set ARGUMENTS[product] if either of product-{include,lib} is set
-    #
-    if ARGUMENTS.has_key(product):
-        topdir = ARGUMENTS[product]
-        del ARGUMENTS[product]          # it's a legal argument
-    elif ARGUMENTS.has_key(product_include) or ARGUMENTS.has_key(product_lib):
-        if ARGUMENTS.has_key(product_include):
-            topdir = os.path.split(re.sub("/$", "", ARGUMENTS[product_include]))[0]
-            if ARGUMENTS.has_key(product_lib):
-                topdir2 = os.path.split(re.sub("/$", "", ARGUMENTS[product_lib]))[0]
-                if topdir != topdir2:
-                    print >> sys.stderr, ("Warning: Ignoring second guess for %s directory: " +
-                                          "%s, %s") % (product, topdir, topdir2)
-        elif ARGUMENTS.has_key(product_lib):
-            topdir = os.path.split(re.sub("/$", "", ARGUMENTS[product_lib]))[0]
-    else:
-        return (None, None, None)
-    #
-    # Now make sure that all three variables are set
-    #
-    if ARGUMENTS.has_key(product_include):
-        incdir = "%s" % ARGUMENTS[product_include]
-        del ARGUMENTS[product_include] # it's a legal argument
-    else:
-        incdir = "%s/include" % topdir
-
-    if ARGUMENTS.has_key(product_lib):
-        libdir = "%s" % ARGUMENTS[product_lib]
-        del ARGUMENTS[product_lib] # it's a legal argument
-    else:
-        libdir = "%s/lib" % topdir
-
-    return (topdir, incdir, libdir)
-
-def searchEnvForDirs(env, product):
-    """If product, productInclude, or productLib is set in env,
-    return a triple of all three values"""
-    product_include = product + "Include"
-    product_lib = product + "Lib"
-    #
-    ARGUMENTS = {}
-    for k in [product, product_include, product_lib]:
-        try:
-            ARGUMENTS[k] = env[k]
-        except KeyError:
-            pass
-
-    return searchArgumentsForDirs(ARGUMENTS, product)
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
 def SharedLibraryIncomplete(self, target, source, **keywords):
     """Like SharedLibrary, but don't insist that all symbols are resolved"""
 
@@ -1146,7 +704,6 @@ def LoadableModuleIncomplete(self, target, source, **keywords):
     return myenv.LoadableModule(target, source, **keywords)
 
 SConsEnvironment.LoadableModuleIncomplete = LoadableModuleIncomplete
-SConsEnvironment.SwigLoadableModule = LoadableModuleIncomplete
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 #
@@ -1562,143 +1119,6 @@ def PkgConfigEUPS(self, product, function=None, unique=1):
 
 SConsEnvironment.PkgConfigEUPS = PkgConfigEUPS
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
-def CheckPython(self):
-    """Attempt to auto-detect Python"""
-
-    import distutils.sysconfig
-
-    if not self.has_key('CPPPATH'):
-        self['CPPPATH'] = []
-
-    cpppath = []
-    for d in (self['CPPPATH'] + distutils.sysconfig.get_python_inc().split()):
-        if not d in cpppath:
-            cpppath += [d]
-        
-    self.Replace(CPPPATH = cpppath)
-
-    if self.has_key('LIBPATH'):
-        libpath = self['LIBPATH']
-    else:
-        libpath = []
-    pylibs = []
-
-    dir = distutils.sysconfig.get_config_var("LIBPL")
-    if not dir in libpath:
-        libpath += [dir]
-    pylibrary = distutils.sysconfig.get_config_var("LIBRARY")
-    mat = re.search("(python.*)\.(a|so|dylib)$", pylibrary)
-    if mat:
-        pylibs += [mat.group(1)]
-        
-    for w in (" ".join([distutils.sysconfig.get_config_var("MODLIBS"),
-                        distutils.sysconfig.get_config_var("SHLIBS")])).split():
-        mat = re.search(r"^-([Ll])(.*)", w)
-        if mat:
-            lL = mat.group(1)
-            arg = mat.group(2)
-            if lL == "l":
-                if not arg in pylibs:
-                    pylibs += [arg]
-            else:
-                if os.path.isdir(arg) and not arg in libpath:
-                    libpath += [arg]
-
-    self.Replace(LIBPATH = libpath)
-    try:
-        type(self.pylibs)
-    except AttributeError:
-        self.pylibs = {}
-        
-    self.libs["python"]["python"] = pylibs
-
-SConsEnvironment.CheckPython = CheckPython
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
-def CheckSwig(self, language="python", ilang="C", ignoreWarnings=None,
-              includedProducts=[], swigdir=None):
-    """Adjust the construction environment to allow the use of swig;
-    if swigdir is specified it's the path to the swig binary, otherwise
-    the calling process' PATH is searched.  Bindings are generated for
-    LANGUAGE (e.g. "python") using implementation language ilang (e.g. "c")
-
-    ignoreWarnings is a list of swig warnings to ignore (e.g. "317,362,389");
-    either a python list, or a space separated string
-    """
-    
-    if not swigdir:
-        for d in os.environ['PATH'].split(os.pathsep):
-            if os.path.isfile(os.path.join(d, "swig")):
-                swigdir = d
-                break
-
-    if not swigdir:
-        raise RuntimeError, "Failed to find swig executable"
-
-    if swigdir not in self['ENV']['PATH'].split(os.pathsep):
-        self['ENV']['PATH'] = swigdir + os.pathsep + self['ENV']['PATH']
-
-    swigTool = Tool('swig'); swigTool(self)
-    self['SWIGFLAGS'] = ""
-    if ilang == "c" or ilang == "C":
-        pass
-    elif ilang == "c++" or ilang == "C++":
-        self['SWIGFLAGS'] += " -c++"
-    else:
-        print >> sys.stderr, "Unknown input language %s" % ilang
-        
-    self['SWIGFLAGS'] += " -%s" % language
-
-    if ignoreWarnings:
-        self['SWIGFLAGS'] += " -w" + ",".join(Split(ignoreWarnings))    
-    #
-    # Allow swig to search all directories that the compiler sees
-    #
-    if self.has_key('CPPPATH'):
-        for d in self['CPPPATH']:
-            if d:
-                d = Dir(d)
-                d = r"\ ".join(re.split(r" ", str(d))) # handle spaces in filenames
-                self['SWIGFLAGS'] += " -I%s" % d
-    #
-    # Also search the python directories of any products in includedProducts
-    #
-    for p in Split(includedProducts):
-        pd = ProductDir(p)
-        if pd:
-            self['SWIGFLAGS'] += " -I%s" % os.path.join(pd, "python")
-        else:
-            print >> sys.stderr, "Product %s is not setup" % p
-    #
-    # If our target is python, check for the python include files/libraries
-    #
-    if language == "python":
-        self.CheckPython()
-        
-SConsEnvironment.CheckSwig = CheckSwig
-
-#
-# Teach scons about swig included dependencies
-#
-# From http://www.scons.org/wiki/SwigBuilder
-#
-SWIGScanner = SCons.Scanner.ClassicCPP(
-    "SWIGScan",
-    ".i",
-    "CPPPATH",
-    '^[ \t]*[%,#][ \t]*(?:include|import)[ \t]*(<|")([^>"]+)(>|")'
-    )
-
-def SwigDependencies(self):
-    # Prepend, as scons has already inserted a [poor] scanner for swig
-    # if swig was found on PATH
-    self.Prepend(SCANNERS=[SWIGScanner])
-    
-SConsEnvironment.SwigDependencies = SwigDependencies
-
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 def SourcesForSharedLibrary(self, files):
@@ -1921,7 +1341,89 @@ def BPDox(env, src, *dependencies):
     packages = [env["eups_product"]]
     for item in dependencies:
         packages.extend(Split(item))
-    target, garbage = os.path.splitext(src)
-    return env.Command(target, src, action="bpdox $SOURCE {0}".format(" ".join(packages)))
+    src = File(src)
+    return env.Command(src.target_from_source("", ""), src, 
+                       action="bpdox $SOURCE {0}".format(" ".join(packages)))
 
 SConsEnvironment.BPDox = BPDox
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+def _tryImport(upsDirs, conf, products, name, required=True):
+    try:
+        for path in upsDirs:
+            filename = os.path.join(path, name + ".cfg")
+            if os.path.exists(filename):
+                module = imp.load_source(name + "_cfg", filename)
+                break
+        else:
+            raise ImportError()
+        return module
+    except ImportError:
+        sys.stderr.write("Failed to import configuration module for '%s'.\n" % name)
+        products[name] = None
+        if required:
+            Exit(1)
+        else:
+            return
+
+def _trySetup(upsDirs, module, conf, products, name, required, build):
+    try:
+        sys.stdout.write("Setting up package %s... " % name)
+        products[name] = module.setup(conf, products, build)
+        sys.stdout.write("yes\n")
+    except Exception as err:
+        sys.stdout.write("no\n")
+        sys.stderr.write("Exception encountered processing configuration module for '%s':\n" % name)
+        sys.stderr.write(str(err) + "\n")
+        products[name] = None
+        if required:
+            Exit(1)
+
+def _recursiveConfigure(upsDirs, conf, products, name, required):
+    """Setup the given product as a dependency."""
+    if name in products:
+        if products[name] is None and required:
+            Exit(1)
+        else:
+            return
+    module = _tryImport(upsDirs, conf, products, name, required)
+    if module is None:
+        return
+    try:
+        for dependency in module.dependencies["required"]:
+            _recursiveConfigure(upsDirs, conf, products, dependency, required)
+        for dependency in module.dependencies["optional"]:
+            _recursiveConfigure(upsDirs, conf, products, dependency, required=False)
+    except AttributeError:
+        sys.stderr.write("No dependencies found while configuring '%s':\n" % name)
+        products[name] = None
+        if required:
+            Exit(1)
+        return
+    _trySetup(upsDirs, module, conf, products, name, required, build=False)
+
+def configureProducts(env, upsDirs):
+    """Setup env['eups_product'] to be built, including recursively configuring dependencies."""
+    conf = env.Configure()
+    products = {}
+    module = _tryImport(upsDirs, conf, products, env["eups_product"], required=True)
+    try:
+        for dependency in module.dependencies["required"]:
+            _recursiveConfigure(upsDirs, conf, products, dependency, required=True)
+        for dependency in module.dependencies["buildRequired"]:
+            _recursiveConfigure(upsDirs, conf, products, dependency, required=True)
+        for dependency in module.dependencies["optional"]:
+            _recursiveConfigure(upsDirs, conf, products, dependency, required=False)
+        for dependency in module.dependencies["buildOptional"]:
+            _recursiveConfigure(upsDirs, conf, products, dependency, required=False)
+    except AttributeError:
+        sys.stderr.write("No dependencies found while configuring '%s':\n" % name)
+        products[name] = None
+        if required:
+            Exit(1)
+        return
+    _trySetup(upsDirs, module, conf, products, env["eups_product"], required=True, build=True)
+    env = conf.Finish()
+    env['products'] = products
+    return env

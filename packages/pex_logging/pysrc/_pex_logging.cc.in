@@ -1,0 +1,386 @@
+#include "lsst/bputils.h"
+
+#include "lsst/pex/logging/LogRecord.h"
+#include "lsst/pex/logging/LogFormatter.h"
+#include "lsst/pex/logging/LogDestination.h"
+#include "lsst/pex/logging/FileDestination.h"
+#include "lsst/pex/logging/Log.h"
+#include "lsst/pex/logging/Trace.h"
+#include "lsst/pex/logging/BlockTimingLog.h"
+#include "lsst/pex/logging/Debug.h"
+#include "lsst/pex/logging/ScreenLog.h"
+#include "lsst/pex/logging/DualLog.h"
+
+namespace bp = boost::python;
+
+namespace lsst { namespace pex { namespace logging { %%scope(lsst::pex::logging)%%
+
+namespace {
+
+struct PyLogRecord {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<LogRecord>%%
+        );
+        %%ignore_members(getProperties, data, addProperty)%%;
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            .%%auto_method(getProperties[const], bp::as_const< bp::return_internal_reference<> >())%%
+            .%%auto_method(getProperties[nonconst], bp::return_internal_reference<>())%%
+            .%%auto_method(data[const], bp::as_const< bp::return_internal_reference<> >())%%
+            .%%auto_method(data[nonconst], bp::return_internal_reference<>())%%
+            ;
+        declareTemplates<bool>(wrapper, "Bool");
+        declareTemplates<int>(wrapper, "Int");
+        declareTemplates<long>(wrapper, "Long");
+        declareTemplates<long long>(wrapper, "LongLong");
+        declareTemplates<float>(wrapper, "Float");
+        declareTemplates<double>(wrapper, "Double");
+        declareTemplates<std::string>(wrapper, "String");
+        %%finish_class%%;
+    }
+
+    template <typename T, typename Wrapper>
+    static void declareTemplates(Wrapper & wrapper, std::string const & name) {
+        wrapper.def(
+            ("addProperty" + name).c_str(),
+            (void (LogRecord::*)(std::string const &, T const &))&LogRecord::addProperty<T>,
+            (bp::arg("name"), bp::arg("val")),
+            %%doc(LogRecord::addProperty[separate])%%
+        );
+    }
+
+};
+
+struct PyLogFormatter {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<LogFormatter,noncopyable>%%
+        );
+        %%ignore_members(LogFormatter)%%;
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+        %%finish_class%%;
+    }
+
+};
+
+struct PyBriefFormatter {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<BriefFormatter>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+        %%finish_class%%;
+    }
+
+};
+
+struct PyIndentedFormatter {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<IndentedFormatter>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+        %%finish_class%%;
+    }
+
+};
+
+struct PyNetLoggerFormatter {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<NetLoggerFormatter>%%
+        );
+        %%ignore_members(NetLoggerFormatter,defaultValDelim)%%;
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            .def(
+                bp::init<std::string const &>(
+                    (bp::arg("valueDelim")=NetLoggerFormatter::defaultValDelim),
+                    %%doc(NetLoggerFormatter::NetLoggerFormatter[string])%%
+                )
+            )
+            ;
+        %%finish_class)%%;
+    }
+
+};
+
+struct PyLogDestination {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<LogDestination>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+        %%finish_class%%;
+    }
+
+};
+
+struct PyFileDestination {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<FileDestination>%%
+        );
+        %%ignore_members(FileDestination, getPath)%%;
+        wrapper
+            .enable_shared_ptr()
+            .def(
+                 bp::init< const std::string &, const boost::shared_ptr< LogFormatter > &, int, bool >(
+                     (bp::arg("filepath"), bp::arg("formatter"), 
+                      bp::arg("threshold")=int(threshold::PASS_ALL), bp::arg("truncate")=false),
+                     %%doc(FileDestination::FileDestination[formatter])%%
+                 )
+             )
+            .def(
+                 bp::init< const std::string &, bool, int, bool >(
+                     (bp::arg("filepath"), bp::arg("verbose")=false, 
+                      bp::arg("threshold")=int(threshold::PASS_ALL), bp::arg("truncate")=false),
+                     %%doc(FileDestination::FileDestination[verbose])%%
+                 )
+             )
+            .def("getPath", &getPath)
+            ;
+        %%finish_class%%;
+    }
+
+    static std::string getPath(FileDestination const & self) {
+        std::ostringstream os;
+        os << self.getPath();
+        return os.str();
+    }
+
+};
+
+struct PyLog {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<Log>%%
+        );
+        %%ignore_members(createChildLog, addDestination, getPreamble, getDefaultLog)%%;
+        %%ignore_members(log, format, setPreambleProperty, addPreambleProperty)%%;
+        wrapper
+            .enable_shared_ptr()
+            .def(
+                "createChildLog", &Log::createChildLog,
+                (bp::arg("childName"), bp::arg("threshold")=Log::INHERIT_THRESHOLD),
+                bp::return_value_policy< bp::manage_new_object >(),
+                %%doc(Log::createChildLog)%%
+            )
+            .%%auto_method(log[properties])%%
+            .%%auto_method(log[simple])%%
+            .%%auto_method(addDestination)%%
+            .def(
+                "addDestination", &addDestination,
+                (bp::arg("filepath"), bp::arg("verbose")=false, bp::arg("threshold")=int(threshold::PASS_ALL))
+            )
+            .%%auto_method(getPreamble, bp::as_const< bp::return_internal_reference<> >())%%
+            .%%auto_method(getDefaultLog, bp::return_value_policy< bp::reference_existing_object >())%%
+            .%%auto_members_regex(.*)%%
+            ;
+        declareTemplates<bool>(wrapper, "Bool");
+        declareTemplates<int>(wrapper, "Int");
+        declareTemplates<long>(wrapper, "Long");
+        declareTemplates<long long>(wrapper, "LongLong");
+        declareTemplates<float>(wrapper, "Float");
+        declareTemplates<double>(wrapper, "Double");
+        declareTemplates<std::string>(wrapper, "String");
+        bp::container_from_python_sequence< std::list< boost::shared_ptr< LogDestination > > >();
+        %%finish_class%%;
+    }
+
+    static void addDestination(Log & self, const std::string& filepath, bool verbose, int threshold_) {
+        boost::shared_ptr<LogDestination> 
+            fdest(new FileDestination(filepath, verbose, threshold_));
+        self.addDestination(fdest);
+    }
+
+    template <typename T, typename Wrapper>
+    static void declareTemplates(Wrapper & wrapper, std::string const & name) {
+        wrapper.def(
+            ("addPreambleProperty" + name).c_str(),
+            &Log::addPreambleProperty<T>,
+            (bp::arg("name"), bp::arg("val")),
+            %%doc(Log::addPreambleProperty)%%
+        );
+        wrapper.def(
+            ("setPreambleProperty" + name).c_str(),
+            &Log::setPreambleProperty<T>,
+            (bp::arg("name"), bp::arg("val")),
+            %%doc(Log::setPreambleProperty)%%
+        );
+        wrapper.def(
+            ("logProperty" + name).c_str(),
+            (void (Log::*)(int, std::string const &, std::string const &, T const &))&Log::log<T>,
+            (bp::arg("importance"), bp::arg("message"), bp::arg("name"), bp::arg("val")),
+            %%doc(Log::log[template])%%
+        );
+    }
+
+};
+
+struct PyLogRec {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<LogRec>%%
+        );
+        wrapper
+            .%%auto_init%%
+            .def(
+                "_lshift_cpp", (LogRec & (LogRec::*)(LogRec::Manip))&LogRec::operator<<, 
+                bp::return_self<>()
+            )
+            .def(
+                "_lshift_cpp", (LogRec & (LogRec::*)(std::string const &))&LogRec::operator<<, 
+                bp::return_self<>()
+            )
+            .enable_shared_ptr();
+            ;
+        {
+            bp::scope inLogRec(wrapper.main_class());
+            %%auto_enum(LogRec::Manip)%%
+                  .export_values();
+        }
+    }
+
+};
+
+struct PyTrace {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<Trace>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+#if !LSST_NO_TRACE
+            .def(
+                bp::init<std::string const &, int const, std::string const &>(
+                    (bp::arg("name"), bp::arg("verbosity"), bp::arg("msg"))
+                )
+            )
+#endif
+            .%%auto_method(setVerbosity)%%
+            .%%auto_method(getVerbosity)%%
+            .%%auto_method(reset)%%
+            ;
+    }
+
+};
+
+struct PyBlockTimingLog {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<BlockTimingLog>%%
+        );
+        {
+            bp::scope inWrapper(wrapper.main_class());
+            %%auto_enum(BlockTimingLog::usageData)%%
+                  .export_values()
+                  ;
+        }
+        %%ignore_members(createForBlock, timeBlock)%%;
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_method(createForBlock, bp::return_value_policy< bp::manage_new_object >())%%
+            .%%auto_method(timeBlock, bp::return_value_policy< bp::manage_new_object >())%%
+            .%%auto_members_regex(.*)%%
+            ;
+        %%finish_class%%;
+    }
+};
+
+struct PyDebug {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<Debug>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+        %%finish_class%%;
+    }
+
+};
+
+struct PyScreenLog {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<ScreenLog>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+        %%finish_class%%;
+    }
+
+};
+
+struct PyDualLog {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<DualLog>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+        %%finish_class%%;
+    }
+
+};
+
+void declare() {
+    PyLogRecord::declare();
+    PyLogFormatter::declare();
+    PyBriefFormatter::declare();
+    PyIndentedFormatter::declare();
+    PyNetLoggerFormatter::declare();
+    PyLogDestination::declare();
+    PyLog::declare();
+    PyLogRec::declare();
+    PyTrace::declare();
+    PyBlockTimingLog::declare();
+    PyDebug::declare();
+    PyScreenLog::declare();
+    PyDualLog::declare();
+}
+
+} // anonymous
+
+}}} // namespace lsst::pex::logging
+
+BOOST_PYTHON_MODULE(_pex_logging) {
+    lsst::bputils::registerConversions();
+    bp::import("lsst.daf.base");
+    lsst::pex::logging::declare();
+}

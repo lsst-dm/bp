@@ -405,14 +405,6 @@ LogRec::~LogRec() {
     if (! _sent) *this << endr;
 }
 
-// this used to be inlined but it was causing problems in SWIG/Python-land.
-// I'm not sure that the problem has really been solved by un-inlining it 
-// or just hidden it away.  
-LogRec& LogRec::operator<<(const string& comment) {
-    addComment(comment);
-    return *this;
-}
-
 // @endcond
 
 }}} // end lsst::pex::logging

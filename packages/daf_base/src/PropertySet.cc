@@ -35,6 +35,7 @@
   */
 
 #include "lsst/daf/base/PropertySet.h"
+#include "boost/format.hpp"
 
 #include <algorithm>
 #include <iomanip>
@@ -620,8 +621,15 @@ void dafBase::PropertySet::add(std::string const& name, T const& value) {
     }
     else {
         if (i->second->back().type() != typeid(T)) {
-            throw LSST_EXCEPT(TypeMismatchException,
-                              name + " has mismatched type");
+            if (boost::is_same< T, std::string >::value) {
+                std::cerr << "T is std::string:\n";
+                std::cerr << "   char const *: '" << typeid(char const *).name() << "'\n";
+            }
+            throw LSST_EXCEPT(
+                TypeMismatchException,
+                (boost::format("%s has mismatched type: expected '%s', got '%s'") 
+                 % name % i->second->back().type().name() % typeid(T).name()).str()
+            );
         }
         i->second->push_back(value);
     }
@@ -636,8 +644,11 @@ template <> void dafBase::PropertySet::add<dafBase::PropertySet::Ptr>(
     }
     else {
         if (i->second->back().type() != typeid(Ptr)) {
-            throw LSST_EXCEPT(TypeMismatchException,
-                              name + " has mismatched type");
+            throw LSST_EXCEPT(
+                TypeMismatchException,
+                (boost::format("%s has mismatched type: expected '%s', got '%s'") 
+                 % name % i->second->back().type().name() % typeid(Ptr).name()).str()
+            );
         }
         _cycleCheckPtr(value, name);
         i->second->push_back(value);
@@ -662,8 +673,11 @@ void dafBase::PropertySet::add(std::string const& name,
     }
     else {
         if (i->second->back().type() != typeid(T)) {
-            throw LSST_EXCEPT(TypeMismatchException,
-                              name + " has mismatched type");
+            throw LSST_EXCEPT(
+                TypeMismatchException,
+                (boost::format("%s has mismatched type: expected '%s', got '%s'") 
+                 % name % i->second->back().type().name() % typeid(T).name()).str()
+            );
         }
         i->second->insert(i->second->end(), value.begin(), value.end());
     }
@@ -678,8 +692,11 @@ template<> void dafBase::PropertySet::add<dafBase::PropertySet::Ptr>(
     }
     else {
         if (i->second->back().type() != typeid(Ptr)) {
-            throw LSST_EXCEPT(TypeMismatchException,
-                              name + " has mismatched type");
+            throw LSST_EXCEPT(
+                TypeMismatchException,
+                (boost::format("%s has mismatched type: expected '%s', got '%s'") 
+                 % name % i->second->back().type().name() % typeid(Ptr).name()).str()
+            );
         }
         _cycleCheckPtrVec(value, name);
         i->second->insert(i->second->end(), value.begin(), value.end());

@@ -1,16 +1,13 @@
 # -*- python -*-
-Import("env")
+Import('env')
 import glob, os
+import lsst.scons.tests
 
 for src in Glob("*.cc"):
     env.Program(src, LIBS=env.getLibs("main test"))
 
-#
-# Tests
-#
-import lsst.scons.tests
+tests = lsst.scons.tests.Control(env, ignoreList=[], verbose=True)
 
-tests = lsst.scons.tests.Control(env, verbose = True)
 tests.run("FormatterRegistry_*.cc")
 tests.run("Persistence_3.cc")
 tests.run("PropertySetPersist.cc")
@@ -29,6 +26,4 @@ else:
 for test in glob.glob("*.py"):
     if test != "Persistence_2.py":
         target = tests.run(test)
-        env.Depends(target,
-                    "../python/lsst/daf/persistence/_persistence%s" %
-                    (env['LDMODULESUFFIX']))
+        env.Depends(target, "#python")

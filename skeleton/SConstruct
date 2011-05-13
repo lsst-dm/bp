@@ -6,18 +6,17 @@
 import os.path
 import lsst.scons.SConsUtils as scons
 
-env = scons.makeEnv("{product}", r"$HeadURL$")
+env = scons.makeEnv("%(PRODUCT)s", r"$HeadURL$")
 
 env.Append(CXXFLAGS="-std=c++0x")
 
 #
 # Build/install things
 #
-targets = {}
 for d in Split("doc lib python tests examples"):
     s = os.path.join(d, "SConscript")
     if os.path.exists(s):
-        targets[d] = SConscript(s)
+        SConscript(s)
 
 env['IgnoreFiles'] = r"(~$|\.pyc$|^\.svn$|\.o$)"
 

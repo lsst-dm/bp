@@ -19,20 +19,21 @@
 # the GNU General Public License along with this program.  If not, 
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from . import _policy
+from . import _pex_policy
 from . import paf
 
 import lsst.bputils
 
-_policy.Policy._set = _policy.Policy.set
-_policy.Policy._add = _policy.Policy.add
+_pex_policy.Policy._set = _pex_policy.Policy.set
+_pex_policy.Policy._add = _pex_policy.Policy.add
 
-lsst.bputils.rescope(_policy, globals(), ignore=("Policy", "ValidationError", "PAFWriter"))
+lsst.bputils.rescope(_pex_policy, globals(), ignore=("Policy", "ValidationError", "PAFWriter"))
 
-@lsst.bputils.extend(_policy.Policy)
+@lsst.bputils.extend(_pex_policy.Policy)
 class Policy:
     
-    typeName = dict((v, _policy.Policy._typeName(v)) for v in _policy.Policy.ValueType.names.itervalues())
+    typeName = dict((v, _pex_policy.Policy._typeName(v)) 
+                    for v in _pex_policy.Policy.ValueType.names.itervalues())
 
     def get(p, name):
         type = p.getValueType(name);
@@ -94,17 +95,17 @@ class Policy:
         else:
             p._add(name, value)
 
-@lsst.bputils.extend(_policy.ValidationError)
+@lsst.bputils.extend(_pex_policy.ValidationError)
 class ValidationError:
 
     def __init__(self, *args, **kwds):
         return lsst.pex.exceptions.LogicErrorException.__init__(
-            self, _policy.LsstCppValidationError(*args, **kwds)
+            self, _pex_policy.LsstCppValidationError(*args, **kwds)
             )
 
-    ErrorType = _policy.LsstCppValidationError.ErrorType
-    EMPTY = _policy.LsstCppValidationError.EMPTY
-    getErrorMessageFor = _policy.LsstCppValidationError.getErrorMessageFor
+    ErrorType = _pex_policy.LsstCppValidationError.ErrorType
+    EMPTY = _pex_policy.LsstCppValidationError.EMPTY
+    getErrorMessageFor = _pex_policy.LsstCppValidationError.getErrorMessageFor
 
 for name, value in ValidationError.ErrorType.names.iteritems():
     setattr(ValidationError, name, value)

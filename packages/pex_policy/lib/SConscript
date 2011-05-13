@@ -1,5 +1,4 @@
 # -*- python -*-
 Import('env')
-import os
 
-env.SharedLibrary('pex_policy', Glob("#src/*.cc") + Glob("#src/paf/*.cc"), LIBS=env.getLibs("self"))
+env.SharedLibrary(env["eups_product"], Glob("#src/*.cc") + Glob("#src/*/*.cc"), LIBS=env.getLibs("self"))

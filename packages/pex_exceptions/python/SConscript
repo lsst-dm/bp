@@ -1,0 +1,7 @@
+# -*- python -*-
+Import('env')
+import os.path
+
+package = os.path.join("lsst", "/".join(env["eups_product"].split("_")), "_" + env["eups_product"])
+
+env.LoadableModuleIncomplete(package, Glob("#pysrc/*.cc"), LIBS=env.getLibs("main python"))

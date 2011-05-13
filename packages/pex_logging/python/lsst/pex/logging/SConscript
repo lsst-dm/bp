@@ -1,8 +1,0 @@
-# -*- python -*-
-Import("env")
-
-src = env.BPDox("#pysrc/_logging.cc.in", "daf_base")
-
-env.Depends(src, "#doc/xml/pex_logging")
-
-env.LoadableModuleIncomplete("_logging", src, LIBS=env.getLibs("main python"))

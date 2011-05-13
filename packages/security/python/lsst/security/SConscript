@@ -1,6 +1,0 @@
-# -*- python -*-
-Import("env")
-
-src = env.BPDox("#pysrc/_security.cc.in")
-
-env.LoadableModuleIncomplete("_security", src, LIBS=env.getLibs("python main"))

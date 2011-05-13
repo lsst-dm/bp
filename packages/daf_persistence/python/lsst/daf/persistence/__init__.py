@@ -22,12 +22,12 @@
 
 """Python interface to lsst::daf::persistence classes
 """
-from . import _persistence
+from . import _daf_persistence
 import lsst.bputils
 
-StorageList = list  # we could wrap a std::vector here if we really wanted, but let's try this
+StorageList = list
 
-lsst.bputils.rescope(_persistence, globals(), ignore=())
+lsst.bputils.rescope(_daf_persistence, globals(), ignore=())
 
 
 from .butlerLocation import *

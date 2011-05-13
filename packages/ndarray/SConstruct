@@ -1,26 +1,25 @@
-import os
-import sys
-import lsst.scons.SConsUtils as scons
-import eups
+# -*- python -*-
 
-env = scons.makeEnv("ndarray",
-                    r"$HeadURL$",
-                    scons.ConfigureDependentProducts("ndarray"))
+#
+# Setup our environment
+#
+import os.path
+import eups
+import lsst.scons.SConsUtils as scons
+
+env = scons.makeEnv("ndarray", r"$HeadURL$")
 
 env.Append(CXXFLAGS="-std=c++0x")
-
-env.Help("""
-Multidimensional array support package for C++
-""")
-
-###############################################################################
-# Boilerplate below here
-
 m4flags = "-I%s" % os.path.join(os.path.abspath(eups.productDir("ndarray")), 'm4')
 
 #
 # Build/install things
 #
+for d in Split("doc lib python tests examples"):
+    s = os.path.join(d, "SConscript")
+    if os.path.exists(s):
+        SConscript(s)
+
 generated = ["#include/lsst/ndarray/ArrayRef.h",
              "#include/lsst/ndarray/operators.h",
              "#include/lsst/ndarray/Vector.h",
@@ -28,15 +27,15 @@ generated = ["#include/lsst/ndarray/ArrayRef.h",
              ]
 headers = [env.M4(filename, "%s.m4" % filename, M4FLAGS=m4flags) for filename in generated]
 
-for d in Split("doc tests"):
-    SConscript(os.path.join(d, "SConscript"))
-
 env['IgnoreFiles'] = r"(~$|\.pyc$|^\.svn$|\.o$)"
 
+env.InstallLSST(
+    env["prefix"], 
+    [d for d in ("bin", "doc", "etc", "examples", "include", "lib", "ups")
+     if os.path.exists(d)]
+    )
 
-scons.CleanTree(r"*~ core *.so *.os *.o")
-
-env.InstallLSST(env['prefix'], ["etc", "include", "ups", "doc"])
+scons.CleanTree(r"*~ core *.so *.os *.o *.pyc")
 
 #
 # Build TAGS files

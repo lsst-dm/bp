@@ -1,0 +1,136 @@
+#include "lsst/bputils.h"
+#include "lsst/daf/data/Provenance.h"
+#include "lsst/daf/data/ReleaseProcess.h"
+#include "lsst/daf/data/LsstData.h"
+#include "lsst/daf/data/LsstImpl_DC3.h"
+#include "lsst/daf/data/LsstBase.h"
+#include "lsst/daf/data/LsstDataConfigurator.h"
+#include "lsst/daf/data/SupportFactory.h"
+
+namespace bp = boost::python;
+
+namespace lsst { namespace daf { namespace data { %%scope(lsst::daf::data)%%
+
+namespace {
+
+struct PyProvenance {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<Provenance>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+    }
+
+};
+
+struct PyReleaseProcess {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<ReleaseProcess>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+    }
+
+};
+
+struct PyLsstData {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<LsstData,noncopyable>%%
+        );
+        %%ignore_members(getChildren)%%;
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+    }
+
+};
+
+struct PyLsstImpl_DC3 {
+
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<LsstImpl_DC3,noncopyable>%%
+        );
+        %%ignore_members(LsstImpl_DC3,getChildren)%%;
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+    }
+
+};
+
+struct PyLsstBase {
+    
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<LsstBase,noncopyable>%%
+        );        
+        %%ignore_members(LsstBase)%%;
+        wrapper
+            .enable_shared_ptr()
+            ;
+        %%finish_class%%;
+    }
+
+};
+
+struct PyLsstDataConfigurator {
+    
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<LsstDataConfigurator,noncopyable>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_members_regex(.*)%%
+            ;
+    }
+
+};
+
+struct PySupportFactory {
+    
+    static void declare() {
+        auto wrapper = bp::make_const_aware(
+            %%auto_class<SupportFactory,noncopyable>%%
+        );
+        wrapper
+            .enable_shared_ptr()
+            .%%auto_method(the, bp::return_value_policy< bp::reference_existing_object >())%%
+            ;
+        %%finish_class%%;
+    }
+
+};
+
+void declare() {
+    PyProvenance::declare();
+    PyReleaseProcess::declare();
+    PyLsstData::declare();
+    PyLsstImpl_DC3::declare();
+    PyLsstBase::declare();
+    PyLsstDataConfigurator::declare();
+    PySupportFactory::declare();
+}
+
+} // anonymous
+
+}}} // namespace lsst::daf::data
+
+BOOST_PYTHON_MODULE(_daf_data) {
+    lsst::bputils::registerConversions();
+    bp::import("lsst.daf.base"); // need to import this so we can subclass Citizen
+    lsst::daf::data::declare();
+}

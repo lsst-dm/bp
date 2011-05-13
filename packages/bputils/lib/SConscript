@@ -1,6 +1,5 @@
 # -*- python -*-
 Import('env')
-import os
 
-env.SharedLibrary('bputils', 
-                  Glob("../src/*.cc") + Glob("../src/*/*.cpp"), LIBS=env.getLibs("self python"))
+env.SharedLibrary(env["eups_product"], Glob("#src/*.cc") + Glob("#src/*/*.cpp"), 
+                  LIBS=env.getLibs("self python"))

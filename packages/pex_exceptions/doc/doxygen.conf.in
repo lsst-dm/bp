@@ -1,0 +1,24 @@
+#
+# SCons' doxygen support needs the options below to be in the actual doxygen.conf file,
+# rather than one included via Doxygen's @INCLUDE option in order for dependencies to
+# be generated properly.
+#
+# The build system will automatically prepend options to specify the project name and
+# version number, tagfiles to be generated and used, which outputs to produce,
+# and additional configuration files to be included from dependencies (most
+# Doxygen options are in the include file provided by the "base" package).
+#
+
+@INCLUDE = pex_exceptions.inc
+
+INPUT = ..
+
+FILE_PATTERNS = *.cc *.dox *.h *.py
+
+RECURSIVE = YES
+
+EXCLUDE = ../.sconf_temp ../examples ../pysrc ../tests ../ups
+
+EXCLUDE_PATTERNS = */.svn*
+
+EXAMPLE_PATH = ../examples

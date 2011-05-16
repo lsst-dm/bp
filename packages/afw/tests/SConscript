@@ -3,25 +3,15 @@ Import("env")
 import os, re, sys
 import glob
 
-import lsst.tests
+import lsst.scons.tests
 import lsst.daf.persistence
-import lsst.SConsUtils as scons # scons 1.17 supports "env.ProductDir", but for now use scons.ProductDir
+import lsst.scons.SConsUtils as scons
 
 for fileName in glob.glob("*.cc"):
     if fileName == "maskIo2.cc":       # This test appears to be invalid
         continue
+    env.Program(fileName, LIBS=env.getLibs("main test"))
 
-    if re.search(r"_wrap.cc", fileName): # not designed to be independently built!
-        continue
-
-    env.Program(fileName, LIBS=env.getlibs("afw"))
-
-env.CheckSwig("python", ilang="c++",
-              includedProducts="afw utils daf_base pex_exceptions pex_logging pex_policy daf_persistence daf_data security ndarray")
-
-testLib = env.LoadableModuleIncomplete("_testLib", ["testLib.i"],
-                                       CCFLAGS=re.sub("-Wall", "", " ".join(env['CCFLAGS'])),
-                                       LIBS=env.getlibs("afw"))
 #
 # Tests
 #
@@ -50,16 +40,16 @@ else:
     )
     
     ignoreList=["testLib.py"]
-    tests = lsst.tests.Control(env, args = testArgs, ignoreList=ignoreList, verbose = True)
+    tests = lsst.scons.tests.Control(env, args = testArgs, ignoreList=ignoreList, verbose = True)
     
     tests.run("*.cc")
     
     # set up python tests
-    for target in tests.run("*.py"):
-        for pkgName in ("cameraGeom", "coord", "detection", "display", "geom", "image", "math",
-            ): # packages with SWIG library
-            env.Depends(target, os.path.join(
-                "#python", "lsst", "afw", pkgName, "_%sLib%s" % (pkgName, env["LDMODULESUFFIX"],)))
-        if target.endswith("spatialCell.py"):
-            env.Depends(target, "_testLib%s" % (env["LDMODULESUFFIX"]))
-            env.Depends(target, "testLib.py")
+    # for target in tests.run("*.py"):
+    #     for pkgName in ("cameraGeom", "coord", "detection", "display", "geom", "image", "math",
+    #         ): # packages with SWIG library
+    #         env.Depends(target, os.path.join(
+    #             "#python", "lsst", "afw", pkgName, "_%sLib%s" % (pkgName, env["LDMODULESUFFIX"],)))
+    #     if target.endswith("spatialCell.py"):
+    #         env.Depends(target, "_testLib%s" % (env["LDMODULESUFFIX"]))
+    #         env.Depends(target, "testLib.py")

@@ -378,8 +378,10 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
     #
     if env.whichCc == "gcc":
         env.Append(CCFLAGS = ['-Wall'])
+
     if env.whichCc == "icc":
         env.Append(CCFLAGS = ['-Wall'])
+        
 
         ignoreWarnings = {
             21 : 'type qualifiers are meaningless in this declaration',
@@ -422,12 +424,18 @@ def MakeEnv(eups_product, versionString=None, dependencies=[],
             conf = env.Configure()
             env.Append(CCFLAGS = ['-DLSST_HAVE_TR1=%d' % int(conf.CheckHeader("tr1/unordered_map", language="C++"))])
             conf.Finish()
+
     #
     # Byte order
     #
     import socket
     if socket.htons(1) != 1:
         env.Append(CCFLAGS = ['-DLSST_LITTLE_ENDIAN=1'])
+
+    #
+    # Enable C++0x features (should work on gcc and icc)
+    #
+    env.Append(CXXFLAGS = ["-std=c++0x", "-DLSST_USE_CPP0X"])
 
     #
     # If we're linking to libraries that themselves linked to
@@ -1297,7 +1305,7 @@ def TestDependencies():
 
 def BuildDoxygenConfig(target, source, env):
     f = open(target[0].abspath, 'w')
-    for tagPath in env['DOXYGEN_TAGS']:
+    for tagPath in env['DOXYGEN_TAGFILES']:
         docDir, tagFile = os.path.split(tagPath)
         htmlDir = os.path.join(docDir, "html")
         f.write('TAGFILES += "{tagPath}={htmlDir}"\n'.format(tagPath=tagPath, htmlDir=htmlDir))

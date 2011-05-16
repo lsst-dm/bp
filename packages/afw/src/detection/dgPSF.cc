@@ -58,7 +58,7 @@ PTR(LocalPsf) dgPsf::doGetLocalPsf(
     );
     multiShapelet.getElements().front().getCoefficients()[0] = 1.0;
     multiShapelet.getElements().back().getCoefficients()[0] = _b;
-    return boost::make_shared<ShapeletLocalPsf>(center, multiShapelet);
+    return ShapeletLocalPsf::Ptr(new ShapeletLocalPsf(center, multiShapelet));
 }
 
 //

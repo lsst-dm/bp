@@ -45,10 +45,12 @@ public:
      */
     explicit dgPsf(int width, int height, double sigma1, double sigma2=1, double b=0);
     virtual Psf::Ptr clone() const {
-        return boost::make_shared<dgPsf>(
-            getKernel()->getWidth(),
-            getKernel()->getHeight(),
-            _sigma1, _sigma2, _b
+        return Psf::Ptr(
+            new dgPsf(
+                getKernel()->getWidth(),
+                getKernel()->getHeight(),
+                _sigma1, _sigma2, _b
+            )
         );
     }
 

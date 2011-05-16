@@ -1,7 +1,7 @@
 /**
 \mainpage lsst::afw;  the LSST Application Framework
 
-\section secIntro Introduction
+\section afwSecIntro Introduction
 
 The LSST applications framework provides the basic functionality needed
 by an image processing system.  In particular:

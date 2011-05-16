@@ -53,10 +53,16 @@ public:
     void setComplex(std::complex<double> const & v) { _complex = v; }
 
     double getE1() const { return _complex.real(); }
-    void setE1(double e1) { _complex.real() = e1; }
-
     double getE2() const { return _complex.imag(); }
+
+#ifdef LSST_USE_CPP0X
+    void setE1(double e1) { _complex.real(e1); }
+    void setE2(double e2) { _complex.imag(e2); }
+#else
+    void setE1(double e1) { _complex.real() = e1; }
     void setE2(double e2) { _complex.imag() = e2; }
+#endif
+
 
     double getE() const { return std::sqrt(std::norm(_complex)); }
     void setE(double e) { _complex *= e / getE(); }

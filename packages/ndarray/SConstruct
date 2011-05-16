@@ -9,7 +9,6 @@ import lsst.scons.SConsUtils as scons
 
 env = scons.makeEnv("ndarray", r"$HeadURL$")
 
-env.Append(CXXFLAGS="-std=c++0x")
 m4flags = "-I%s" % os.path.join(os.path.abspath(eups.productDir("ndarray")), 'm4')
 
 #

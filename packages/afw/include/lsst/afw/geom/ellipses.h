@@ -46,8 +46,6 @@
 
 namespace lsst { namespace afw { namespace geom {
 
-using ellipses::Ellipse;
-
 namespace ellipses {
 
 typedef Separable<Distortion,DeterminantRadius> SeparableDistortionDeterminantRadius;

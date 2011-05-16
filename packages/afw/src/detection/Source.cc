@@ -175,3 +175,6 @@ bool det::Source::operator==(Source const & d) const {
     
     return false;
 }
+
+LSST_REGISTER_SERIALIZER(lsst::afw::detection::Astrometry)
+LSST_REGISTER_SERIALIZER(lsst::afw::detection::Shape)

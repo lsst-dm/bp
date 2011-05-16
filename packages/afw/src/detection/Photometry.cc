@@ -10,3 +10,5 @@ std::ostream &lsst::afw::detection::Photometry::output(std::ostream &os ///< The
     }
     return os;
 }
+
+LSST_REGISTER_SERIALIZER(lsst::afw::detection::Photometry)

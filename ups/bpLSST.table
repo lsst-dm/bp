@@ -11,6 +11,6 @@ setupRequired(pex_policy bp)
 setupRequired(daf_persistence bp)
 setupRequired(security bp)
 setupRequired(daf_data bp)
-#setupRequired(afw bp)
+setupRequired(afw bp)
 
 envPrepend(PATH, ${PRODUCT_DIR}/bin)

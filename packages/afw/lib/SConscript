@@ -1,5 +1,5 @@
 # -*- python -*-
-import glob, os, re
+import glob, os
 
 Import('env')
 #
@@ -11,6 +11,4 @@ try:
 except AttributeError:                  # requires sconsUtils > 3.3
     pass
 
-env.SharedLibrary(
-    'afw', ccFiles, LIBS=[x for x in env.getlibs("afw") if x != "afw"]
-)
+env.SharedLibrary(env["eups_product"], ccFiles, LIBS=env.getLibs("self"))

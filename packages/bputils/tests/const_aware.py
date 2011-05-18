@@ -22,6 +22,8 @@ class TestConstAware(unittest.TestCase):
         self.assertRaises(AttributeError, set_static_const_value)
 
     def checkNonConst(self, x):
+        self.assert_(hasattr(x, "freeFunctionC"))
+        self.assert_(hasattr(x, "freeFunctionNC"))
         self.assertEqual(type(x), const_aware_mod.Example)        
         self.assert_(x.const_method())
         self.assert_(x.non_const_method())
@@ -49,6 +51,8 @@ class TestConstAware(unittest.TestCase):
         self.checkStaticMembers(x)
 
     def checkConst(self, x):
+        self.assert_(hasattr(x, "freeFunctionC"))
+        self.assertFalse(hasattr(x, "freeFunctionNC"))
         self.assertEqual(type(x), const_aware_mod.Example.__const_proxy__)
         self.assert_(x.const_method())
         self.assertFalse(hasattr(x,"non_const_method"))

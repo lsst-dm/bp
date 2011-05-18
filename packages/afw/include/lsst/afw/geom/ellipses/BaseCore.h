@@ -53,12 +53,10 @@ class Parametric;
  */
 class BaseCore {
 public:
-#ifndef SWIG
     class Transformer;
     class GridTransform;
     class Convolution;
     template <typename Output> struct Converter;
-#endif
 
     typedef boost::shared_ptr<BaseCore> Ptr;
     typedef boost::shared_ptr<BaseCore const> ConstPtr;
@@ -74,11 +72,9 @@ public:
 
     static Ptr make(std::string const & name, BaseCore const & other);
 
-#ifndef SWIG
     static Ptr make(std::string const & name, Transformer const & other);
 
     static Ptr make(std::string const & name, Convolution const & other);
-#endif
 
     /// @brief Return a string that identifies this parametrization.
     virtual std::string getName() const = 0;
@@ -116,6 +112,7 @@ public:
      */
     double getTraceRadius() const;
 
+    //@{
     /**
      *  @name Coordinate transforms
      *  
@@ -123,9 +120,8 @@ public:
      *  The transform can be done in-place by calling inPlace() on the returned
      *  expression object, or returned as a new shared_ptr by calling copy().
      */
-    //@{
-    Transformer transform(LinearTransform const & transform);
-    Transformer const transform(LinearTransform const & transform) const;
+    Transformer transform(LinearTransform const & transform); ///< @bpdox{label:nonconst}
+    Transformer const transform(LinearTransform const & transform) const; ///< @bpdox{label:const}
     //@}
 
     /**
@@ -136,12 +132,12 @@ public:
      */
     GridTransform const getGridTransform() const;
 
+    //@{
     /**
      *  @name Convolve two bivariate Gaussians defined by their 1-sigma ellipses.
      */
-    //@{
-    Convolution convolve(BaseCore const & other);
-    Convolution const convolve(BaseCore const & other) const;
+    Convolution convolve(BaseCore const & other); ///< @bpdox{label:nonconst}
+    Convolution const convolve(BaseCore const & other) const; ///< @bpdox{label:const}
     //@}
 
     /// @brief Return the size of the bounding box for the ellipse core.
@@ -189,7 +185,7 @@ public:
     virtual ~BaseCore() {}
 
 protected:
-#ifndef SWIG
+
     friend class Parametric;
 
     static void registerSubclass(Ptr const & example);
@@ -234,10 +230,9 @@ protected:
     virtual Jacobian _dAssignFromAxes(double a, double b, double theta) = 0;
 
     ParameterVector _vector;
-#endif
+
 };
 
-#ifndef SWIG
 template <typename Output>
 struct BaseCore::Converter {
     BaseCore const & input;
@@ -252,8 +247,6 @@ template <typename Output>
 inline BaseCore::Converter<Output> BaseCore::as() const {
     return Converter<Output>(*this);
 }
-
-#endif
 
 }}}} // namespace lsst::afw::geom::ellipses
 

@@ -70,7 +70,7 @@ namespace geom {
  */
 class LinearTransform {
 public:
-    enum Parameters {XX=0,YX=1,XY=2,YY=3};
+    enum ParameterEnum {XX=0,YX=1,XY=2,YY=3};
 
     typedef Eigen::Matrix<double,4,1> ParameterVector;
     typedef Eigen::Matrix<double,2,4> TransformDerivativeMatrix;
@@ -113,10 +113,9 @@ public:
     Matrix & getMatrix() { return _matrix; }
 
     double & operator[](int i) { return _matrix(i % 2, i / 2); }
-    double const & operator[](int i) const { 
+    double const operator[](int i) const { 
         return const_cast<Matrix&>(_matrix)(i % 2, i / 2);
     }
-
 
     LinearTransform const invert() const;
     

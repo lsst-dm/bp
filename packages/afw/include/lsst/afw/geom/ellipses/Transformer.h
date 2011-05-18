@@ -101,8 +101,6 @@ public:
 
     /// @brief %Transform the ellipse in-place.
     void inPlace();
-    
-    void apply(Ellipse & other) const;
 
     /// @brief Return the derivative of transform output ellipse with respect to input ellipse.
     DerivativeMatrix d() const;

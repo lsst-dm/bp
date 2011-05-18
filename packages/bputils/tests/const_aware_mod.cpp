@@ -33,6 +33,10 @@ public:
 
 };
 
+static void freeFunctionC(Example const & self) {}
+
+static void freeFunctionNC(Example & self) {}
+
 double Example::static_value = 2.0;
 float const Example::static_const_value = 3.0;
 
@@ -128,6 +132,8 @@ static void export_module() {
         .def("compare_static_value", &Example::compare_static_value)
         .staticmethod("compare_static_value")
         .def(bp::init<int>((bp::arg("value")=0)))
+        .def("freeFunctionC", &freeFunctionC)
+        .def("freeFunctionNC", &freeFunctionNC)
         ;
 
     bp::const_aware::exposer<ConstAwareOwner>("ConstAwareOwner")

@@ -22,6 +22,10 @@ class OverloadSet(object):
         except KeyError:
             pass
 
+    def _get_hidden(self):
+        return (len(self.visible) == 0)
+    hidden = property(_get_hidden)
+
     def add(self, member):
         self.all[member.refid] = member
         if not member.hidden:
@@ -47,7 +51,7 @@ class OverloadSet(object):
                         )
         if result is None:
             raise LookupError(
-                "Label '{0}' not found for overload '{1}'.".format(name, "::".join(self.name))
+                "Label '{0}' not found for overload '{1}'.".format(label, "::".join(self.name))
                 )
         return result
 
@@ -85,6 +89,7 @@ class MemberNode(Node):
         self.parent = parent
         
     def load(self, index):
+        logging.debug("Loading member {0} {1}.".format(self.kind, "::".join(self.name)))
         if self.target is None:
             self.parent.load(index)
         if self.target is None:
@@ -99,6 +104,7 @@ class CompoundNode(Node):
         Node.__init__(self, name, kind, refid)
         self.xmlfile = os.path.join(path, "{0}.xml".format(self.refid))
         self.members = OrderedDict()
+        self.hidden = False
 
     def _get_visible(self):
         result = OrderedDict()
@@ -108,7 +114,11 @@ class CompoundNode(Node):
         return result
     visible = property(_get_visible)
 
+    def hide(self):
+        self.hiddent = True
+
     def load(self, index):
+        logging.debug("Loading compound {0} {1}.".format(self.kind, "::".join(self.name)))
         if self.target is not None:
             return
         if __debug__:
@@ -177,6 +187,7 @@ class Index(object):
     def __init__(self, paths=()):
         self.by_name = {}
         self.by_refid = {}
+        self.conflicts = {}
         groups = []
         for path in paths:
             xmlfile = os.path.join(path, "index.xml")
@@ -202,7 +213,7 @@ class Index(object):
                         "  added compound '{0}' ({1}).".format("::".join(compound_node.name),
                                                                compound_node.refid)
                         )
-                self.by_name[compound_node.name] = compound_node
+                self.addNode(compound_node)
                 self.by_refid[compound_node.refid] = compound_node
                 for member_xml in compound_xml.findall("member"):
                     if compound_node.kind == "file":
@@ -217,7 +228,8 @@ class Index(object):
                         )
                     if __debug__:
                         logging.debug(
-                            "    added member '{0}' ({1}).".format(
+                            "    added {0} member '{1}' ({2}).".format(
+                                member_node.kind,
                                 "::".join(member_node.name),
                                 member_node.refid
                                 )
@@ -228,7 +240,7 @@ class Index(object):
                         overloads = OverloadSet(member_node.name, parent=compound_node)
                         overloads.add(member_node)
                         compound_node.members[member_node.name[-1]] = overloads
-                        self.by_name[overloads.name] = overloads
+                        self.addNode(overloads)
                     self.by_refid[member_node.refid] = member_node
         for compound_node, compound_xml in groups:
             for member_xml in compound_xml.findall("member"):
@@ -241,7 +253,36 @@ class Index(object):
                             "::".join(member_node.name), member_node.refid, compound_node.name[-1]
                             )
                         )
+        for name, conflict in self.conflicts.iteritems():
+            valid = []
+            logging.debug("Attempting to resolve name conflict '{0}'".format("::".join(name)))
+            for item in conflict:
+                logging.debug("  conflicting item: {0}".format(item))
+                item.load(self)
+                if not item.hidden:
+                    valid.append(item)
+            if len(valid) == 0:
+                del self.by_name[name]
+                logging.debug("  deleting name '{0}'.".format("::".join(name)))
+            else:
+                self.by_name[name] = valid[0]
+                if len(valid) > 1:
+                    logging.warning("Could not resolve conflict for name '{0}'.".format("::".join(name)))
+                else:
+                    logging.debug("  resolved name '{0}'.".format("::".join(name)))
 
+    def addNode(self, node):
+        if node.name in self.by_name:
+            item = self.by_name[node.name]
+            if isinstance(item, list):
+                item.append(node)
+            else:
+                conflict = [item, node]
+                self.conflicts[node.name] = conflict
+                self.by_name[node.name] = conflict
+        else:
+            self.by_name[node.name] = node
+        
     def lookup(self, name, scope=()):
         end = tuple(name)
         start = tuple(scope)

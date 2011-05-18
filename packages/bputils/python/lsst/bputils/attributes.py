@@ -2,6 +2,8 @@
 Miscellaneous utilites for customizing Python attributes and descriptors.
 """
 
+import re
+
 def getattr_error(self):
     raise AttributeError("unreadable attribute")    
 
@@ -17,7 +19,7 @@ def setattr_pass(self, value):
 def delattr_pass(self):
     pass
 
-class cached_property(property):
+class CachedProperty(property):
 
     def __get__(self, obj, objtype=None):
         if obj is None:
@@ -40,6 +42,23 @@ class cached_property(property):
     def __init__(self, private, fget=getattr_error, fset=setattr_error, fdel=delattr_pass, doc=None):
         property.__init__(self, fget=fget, fset=fset, fdel=fdel, doc=doc)
         self.private = private
+
+def apply(source, function, names=None, ignore=None, names_regex=None, ignore_regex=None, 
+          only_classes=False):
+    """Call function(obj, name) for each object in dir(source).
+    """
+    names_re = None if names_regex is None else re.compile(names_regex)
+    ignore_re = None if ignore_regex is None else re.compile(ignore_regex)
+    if ignore is None:
+        ignore = ()
+    if names is None:
+        names = [name for name in dir(source) if name not in ignore and not name.startswith("_")]
+    for name in names:
+        if names_re and not names_re.match(name): continue
+        if ignore_re and ignore_re.match(name): continue
+        obj = getattr(source, name)
+        if only_classes and not isinstance(obj, type): continue
+        function(obj, name)
 
 def member_of(cls, name=None):
     """A parametrized descriptor that adds a method or nested class to a class outside the class
@@ -67,6 +86,18 @@ def member_of(cls, name=None):
             setattr(scope, kw["name"], member)
         return member
     return nested
+
+class Rescope(object):
+
+    def __init__(self, scope):
+        self.scope = scope
+
+    def __call__(self, obj, name):
+        try: # this is settable for classes, but not free functions
+            obj.__module__ = self.scope['__name__']
+        except AttributeError:
+            pass
+        self.scope[name] = obj
 
 def extend(target, rename=True, rescope=True):
     """A parametrized decorator that allows one to add additional members to an
@@ -96,7 +127,7 @@ def extend(target, rename=True, rescope=True):
         return target
     return nested
 
-def rescope(source, scope, names=None, ignore=None):
+def rescope(source, scope, **kw):
     """Move objects from module 'source' into a scope defined by globals dict 'scope', updating
     their __module__ attribute.
 
@@ -104,19 +135,8 @@ def rescope(source, scope, names=None, ignore=None):
     considered to exist in the target scope and their definition in 'source' is just an
     implemntation detail (i.e. source is usually a wrapped C++ module, and we want the names
     to appear directly in the package).
-
-    If names is None, ignore will be a list of names not to import; those that begin with an
-    underscore are always skipped.
     """
-    if ignore is None:
-        ignore = ()
-    if names is None:
-        names = [name for name in dir(source) if name not in ignore and not name.startswith("_")]
-    for name in names:
-        obj = getattr(source, name)
-        try: # this is settable for classes, but not free functions
-            obj.__module__ = scope['__name__']
-        except AttributeError:
-            pass
-        scope[name] = obj
+    apply(source, Rescope(scope), **kw)
 
+def copy_str_to_repr(cls, name):
+    setattr(cls, "__repr__", getattr(cls, "__str__"))

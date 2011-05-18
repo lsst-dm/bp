@@ -242,13 +242,21 @@ class CxxType(object):
             if child_xml.tag == "ref":
                 refid = child_xml.get("refid")
                 try:
-                    self.dictionary[refid] = index.by_refid[refid]
-                    terms.append("".join(("{", refid, "}")))
+                    node = index.by_refid[refid]
                 except KeyError:
                     logging.warning("Could not resolve '{0}' - scope may be incorrect (include "
                                     "additional xml directories to resolve this problem)"
                                     ".".format(child_xml.text))
                     terms.append(child_xml.text)
+                else:
+                    text_name = child_xml.text.split("::")
+                    if node.name[-1] != text_name[-1]:
+                        logging.debug("Ignoring reference to {0} with text '{1}'"
+                                      .format("::".join(node.name), child_xml.text))
+                        terms.append(child_xml.text)
+                    else:
+                        self.dictionary[refid] = node
+                        terms.append("".join(("{", refid, "}")))
             else:
                 add_text(child_xml.text)
             add_text(child_xml.tail)

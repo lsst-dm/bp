@@ -58,6 +58,7 @@ public:
      */
     bool operator!=(Extent<T,N> const & other) const { return any(this->ne(other)); }
 
+    //@{
     /**
      *  @name Named comparison functions
      *
@@ -70,7 +71,6 @@ public:
      *  \endcode
      *  are both ubiquitous and easy to interpret.
      */
-    //@{
     CoordinateExpr<N> eq(Extent<T,N> const & other) const;
     CoordinateExpr<N> ne(Extent<T,N> const & other) const;
     CoordinateExpr<N> lt(Extent<T,N> const & other) const;
@@ -85,12 +85,12 @@ public:
     CoordinateExpr<N> ge(T scalar) const { return this->ge(Extent<T,N>(scalar)); }
     //@}
 
+    //@{
     /**
      *  @name Additive arithmetic operators
      *
      *  No scalar interoperability is provided for Extent additive arithmetic operations.
      */
-    //@{
     Point<T,N> operator+(Point<T,N> const & other) const;
     Extent<T,N> operator+(Extent<T,N> const & other) const {
         return Extent<T,N>(this->_vector + other._vector);
@@ -110,12 +110,12 @@ public:
     Extent<T,N> operator-() const { return Extent<T,N>(-this->_vector); }
     //@}
 
+    //@{
     /**
      *  @name Multiplicative arithmetic operators
      *
      *  As usual with matrices and vectors, Extent can be multiplied or divided by a scalar.
      */
-    //@{
     Extent<T,N> operator*(T scalar) const { return Extent<T,N>(this->_vector * scalar); }
     Extent<T,N> & operator*=(T scalar) { this->_vector *= scalar; return static_cast<Extent<T,N>&>(*this); }
     Extent<T,N> operator/(T scalar) const { return Extent<T,N>(this->_vector / scalar); }
@@ -148,7 +148,7 @@ class Extent : public ExtentBase<T,N> {
 public:
     typedef typename Super::EigenVector EigenVector;
 
-    /// \brief Construct an Extent with all elements set to the same scalar value.
+    /// \brief Construct an Extent with all elements set to the same scalar value. @bpdox{label:scalar}
     explicit Extent(T val=static_cast<T>(0)) : Super(val) {}
 
     /// \brief Construct an Extent from an Eigen vector.

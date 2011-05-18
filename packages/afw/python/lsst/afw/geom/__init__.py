@@ -22,24 +22,11 @@
 
 """Application Framework geometry code including Point, Extent, and ellipses
 """
-from .geomLib import (
-    version,
-    LinearTransform,
-    AffineTransform,
-    Angle, radians, degrees, arcminutes, arcseconds, PI, isAngle,
-    CoordinateExpr2,
-    CoordinateExpr3,
-    Extent2I,
-    Extent3I,
-    Extent2D,
-    Extent3D,
-    Point2I,
-    Point3I,
-    Point2D,
-    Point3D,
-    Box2I,
-    Box2D,
-)
+from . import _afw_geom
+import lsst.bputils
+
+lsst.bputils.rescope(_afw_geom, globals(), ignore=())
+lsst.bputils.apply(_afw_geom, lsst.bputils.copy_str_to_repr, only_classes=True, ignore=("AngleUnit",))
 
 BoxI = Box2I
 BoxD = Box2D

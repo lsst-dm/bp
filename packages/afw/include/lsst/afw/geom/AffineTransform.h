@@ -78,7 +78,7 @@ public:
     typedef boost::shared_ptr<AffineTransform> Ptr;
     typedef boost::shared_ptr<AffineTransform const> ConstPtr;
 
-    enum Parameters {XX=0,YX=1,XY=2,YY=3,X=4,Y=5};
+    enum ParameterEnum {XX=0,YX=1,XY=2,YY=3,X=4,Y=5};
 
     typedef Eigen::Matrix3d Matrix;
     typedef Eigen::Matrix<double,6,1> ParameterVector;
@@ -145,11 +145,17 @@ public:
         return Extent2D(_linear(p));
     }
 
-    Extent2D const & getTranslation() const {return _translation;}
-    Extent2D & getTranslation() {return _translation;}
+    /// @brief Return the translation part of the transform. @bpdox{label:const}
+    Extent2D const & getTranslation() const { return _translation; }
 
-    LinearTransform const & getLinear() const {return _linear;}
-    LinearTransform & getLinear() {return _linear;}
+    /// @brief Return the translation part of the transform. @bpdox{label:nonconst}
+    Extent2D & getTranslation() { return _translation; }
+
+    /// @brief Return the linear part of the transform. @bpdox{label:const}
+    LinearTransform const & getLinear() const { return _linear; }
+
+    /// @brief Return the linear part of the transform. @bpdox{label:nonconst}
+    LinearTransform & getLinear() { return _linear; }
 
     Matrix const getMatrix() const;
     
@@ -159,7 +165,7 @@ public:
     double & operator[](int i) { 
         return (i < 4) ? _linear[i] : _translation[i - 4]; 
     }
-    double operator[](int i) const { 
+    double const operator[](int i) const { 
         return (i < 4) ? _linear[i] : _translation[i - 4]; 
     }
 

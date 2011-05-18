@@ -15,15 +15,21 @@ class Generator(object):
 
     macro_regex = re.compile(r"%%(?P<name>\w+)\s*(?P<body>[^%]*)\s*%%")
     scope_regex = re.compile(r"\s*\(\s*(?P<name>(\w+::)*\w+)\s*\)\s*")
-    in_class_regex = re.compile(r"\s*\(\s*(?P<name>(\w+::)*\w+)\s*\)\s*(?P<tparams><.*?>)?\s*")
+    in_class_regex = re.compile(r"\s*\(\s*(?P<name>(\w+::)*\w+)\s*(?P<tparams><.*>)?\s*\)\s*")
     doc_regex = re.compile(r"\s*\(\s*(?P<name>(\w+::)*\w+)\s*(\[(?P<label>\w+)\])?\s*\)\s*")
     auto_class_regex = re.compile(
-        r"\s*<\s*(?P<name>(\w+::)*\w+)\s*(?P<tparams><.*?>)?\s*(,\s*(?P<nc>(boost::)?noncopyable))?\s*>"
+        r"\s*<\s*(?P<name>(\w+::)*\w+)\s*(?P<tparams><.*>)?\s*(,\s*(?P<nc>(boost::)?noncopyable))?\s*>"
         r"(\s+(?P<variable>\w+))?\s*(\((?P<init>.*)\))?"
         )
     auto_method_regex = re.compile(
         r"\s*\((?P<name>\w+)"
         r"(\[(?P<labels>\s*\w+\s*(,\s*\w+\s*)*)\])?"
+        r"(\s*,\s*(?P<policies>.*))?\s*\)\s*"
+        )
+    auto_method_rename_regex = re.compile(
+        r"\s*\((?P<name>\w+)"
+        r"(\[(?P<labels>\s*\w+\s*(,\s*\w+\s*)*)\])?"
+        r"\s*,\s*(?P<pyname>\w+)"
         r"(\s*,\s*(?P<policies>.*))?\s*\)\s*"
         )
     auto_function_regex = re.compile(
@@ -126,7 +132,7 @@ class Generator(object):
     def m_doc(self, body, indent):
         match = self.doc_regex.match(body)
         if not match:
-            raise SyntaxError("Error parsing %%doc%% argument.")
+            raise SyntaxError("Error parsing doc argument.")
         node = self.index.lookup(match.group("name").split("::"), scope=self._scope)
         if isinstance(node, lookup.OverloadSet):
             label = match.group("label")
@@ -139,7 +145,7 @@ class Generator(object):
     def m_in_class(self, body, indent):
         match = self.in_class_regex.match(body)
         if not match:
-            raise SyntaxError("Error parsing scope argument.")
+            raise SyntaxError("Error parsing in_class argument.")
         node = self.index.lookup(match.group("name").split("::"), scope=self._scope)
         self._class = node
         self._class_tparams = match.group("tparams")
@@ -149,7 +155,7 @@ class Generator(object):
     def m_auto_class(self, body, indent):
         match = self.auto_class_regex.match(body)
         if not match:
-            raise SyntaxError("Error parsing class argument.")
+            raise SyntaxError("Error parsing auto_class argument.")
         node = self.index.lookup(match.group("name").split("::"), scope=self._scope)
         noncopyable = match.group("nc") != None
         variable = match.group("variable")
@@ -188,6 +194,40 @@ class Generator(object):
             results.append(
                 self.formatter.getMethodDeclaration(
                     node.target, scope=self._scope, indent=indent,
+                    call_policies=match.group("policies"), class_type=class_type
+                    )
+                )
+            discard(self._class_members_todo, node.refid)
+        if is_static:
+            results.append('staticmethod("{0}")'.format(method_name[-1]))
+        if len(results) == 0:
+            raise LookupError("Empty macro result.")
+        return "\n{indent}.".format(indent=indent).join(results)
+
+    def m_auto_method_rename(self, body, indent):
+        if self._class is None:
+            raise RuntimeError("No class active at auto_method_rename invocation point.")
+        match = self.auto_method_rename_regex.match(body)
+        if not match:
+            raise SyntaxError("Error parsing auto_method_regex argument.")
+        class_type = formatter.formatName(self._class, scope=self._scope)
+        if self._class_tparams:
+            class_type += self._class_tparams
+        method_name = match.group("name").split("::")
+        overloads = self.index.lookup(method_name, scope=self._class.name)
+        if match.group("labels"):
+            labels = [label.strip() for label in match.group("labels").split(",")]
+            sequence = overloads.findmany(labels)
+        else:
+            sequence = overloads.visible.values()
+        results = []
+        is_static = False
+        for node in sequence:
+            if node.target.is_static:
+                is_static = True
+            results.append(
+                self.formatter.getMethodDeclaration(
+                    node.target, scope=self._scope, indent=indent, name=match.group("pyname"),
                     call_policies=match.group("policies"), class_type=class_type
                     )
                 )

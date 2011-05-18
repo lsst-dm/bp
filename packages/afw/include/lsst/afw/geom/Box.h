@@ -58,22 +58,23 @@ public:
 
     enum EdgeHandlingEnum { EXPAND, SHRINK };
 
-    /// \brief Construct an empty box.
+    /// @brief Construct an empty box.
     Box2I() : _minimum(0), _dimensions(0) {}
 
     Box2I(Point2I const & minimum, Point2I const & maximum, bool invert=true);
     Box2I(Point2I const & minimum, Extent2I const & dimensions, bool invert=true);
 
+    /// @brief Conversion from floating-point box. @bpdox{ignore}
     explicit Box2I(Box2D const & other, EdgeHandlingEnum edgeHandling=EXPAND);
 
-    /// \brief Standard copy constructor.
+    /// @brief Standard copy constructor.
     Box2I(Box2I const & other) : _minimum(other._minimum), _dimensions(other._dimensions) {}
 
     void swap(Box2I & other) {
         _minimum.swap(other._minimum);
         _dimensions.swap(other._dimensions);
     }
-    /// \brief Standard assignment operator.
+    /// @brief Standard assignment operator.
     Box2I & operator=(Box2I const & other) {
         _minimum = other._minimum;
         _dimensions = other._dimensions;

@@ -54,6 +54,7 @@ public:
      */
     bool operator!=(Point<T,N> const & other) const { return any(this->ne(other)); }
 
+    //@{
     /**
      *  @name Named vectorized comparison functions
      *
@@ -66,7 +67,6 @@ public:
      *  \endcode
      *  are both ubiquitous and easy to interpret.
      */
-    //@{
     CoordinateExpr<N> eq(Point<T,N> const & other) const;
     CoordinateExpr<N> ne(Point<T,N> const & other) const;
     CoordinateExpr<N> lt(Point<T,N> const & other) const;
@@ -81,12 +81,12 @@ public:
     CoordinateExpr<N> ge(T scalar) const { return this->ge(Point<T,N>(scalar)); }
     //@}
 
+    //@{
     /**
      *  @name Arithmetic operators
      *
      *  No scalar interoperability is provided for Point arithmetic operations.
      */
-    //@{
     Extent<T,N> operator-(Point<T,N> const & other) const {
         return Extent<T,N>(this->_vector - other._vector);
     }
@@ -127,7 +127,7 @@ class Point : public PointBase<T,N> {
 public:
     typedef typename Super::EigenVector EigenVector;
 
-    /// @brief Construct a Point with all elements set to the same scalar value.
+    /// @brief Construct a Point with all elements set to the same scalar value.  @bpdox{label:scalar}
     explicit Point(T val=static_cast<T>(0)) : Super(val) {}
 
     /**

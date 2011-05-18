@@ -49,11 +49,9 @@ namespace lsst { namespace afw { namespace geom { namespace ellipses {
  */
 class Ellipse {
 public:
-#ifndef SWIG
     class Transformer; ///< Proxy return type for Ellipse::transform().
     class GridTransform; ///< Proxy return type for Ellipse::getGridTransform().
     class Convolution; ///< Proxy return type for Ellipse::convolve().
-#endif
 
     typedef Box2D Envelope; ///< Bounding box type.
     typedef Eigen::Matrix<double,5,1> ParameterVector; ///< Parameter vector type.
@@ -63,10 +61,10 @@ public:
 
     enum ParameterEnum { X=3, Y=4 }; ///< Definitions for elements of an ellipse vector.
 
-    /// @brief Return the center point.
+    /// @brief Return the center point. @bpdox{label:const}
     Point2D const & getCenter() const { return _center; }
 
-    /// @brief Return the center point.
+    /// @brief Return the center point. @bpdox{label:nonconst}
     Point2D & getCenter() { return _center; }
 
     /// @brief Set the center point.
@@ -109,6 +107,7 @@ public:
 
     void writeParameters(double * iter) const;
 
+    //@{
     /**
      *  @name Coordinate transforms
      *  
@@ -116,17 +115,16 @@ public:
      *  The transform can be done in-place by calling inPlace() on the returned
      *  expression object, or returned as a new shared_ptr by calling copy().
      */
-    //@{
-    Transformer transform(AffineTransform const & transform);
-    Transformer const transform(AffineTransform const & transform) const;
+    Transformer transform(AffineTransform const & transform); ///< @bpdox{label:nonconst}
+    Transformer const transform(AffineTransform const & transform) const; ///< @bpdox{label:const}
     //@}
 
+    //@{
     /**
      *  @name Convolve two bivariate Gaussians defined by their 1-sigma ellipses.
      */
-    //@{
-    Convolution convolve(Ellipse const & other);
-    Convolution const convolve(Ellipse const & other) const;
+    Convolution convolve(Ellipse const & other); ///< @bpdox{label:nonconst}
+    Convolution const convolve(Ellipse const & other) const; ///< @bpdox{label:const}
     //@}
 
     /**
@@ -171,10 +169,9 @@ public:
     explicit Ellipse(BaseCore::ConstPtr const & core, Point2D const & center = Point2D()) :
         _core(core->clone()), _center(center) {}
 
-#ifndef SWIG
     Ellipse(Transformer const & other);
+
     Ellipse(Convolution const & other);
-#endif
 
     Ellipse(Ellipse const & other) :
         _core(other.getCore().clone()), _center(other.getCenter()) {}

@@ -2,12 +2,10 @@
 Import('env')
 import os.path
 
-# srcOut = []
-# for srcIn in Glob("#pysrc/*.cc.in"):
-#     srcOut.extend(env.BPDox(srcIn))
-
-# env.Depends(srcOut, "#doc")
-
-# package = os.path.join("lsst", "/".join(env["eups_product"].split("_")), "_" + env["eups_product"])
-
-# env.LoadableModuleIncomplete(package, srcOut, LIBS=env.getLibs("main python"))
+for name in ("geom", "geom/ellipses"):
+    srcOut = []
+    for srcIn in Glob("#pysrc/%s/*.cc.in" % name):
+        srcOut.extend(env.BPDox(srcIn))
+    env.Depends(srcOut, "#doc")
+    package = os.path.join("lsst", "afw", name, "_afw_%s" % "_".join(name.split("/")))
+    env.LoadableModuleIncomplete(package, srcOut, LIBS=env.getLibs("main python"))

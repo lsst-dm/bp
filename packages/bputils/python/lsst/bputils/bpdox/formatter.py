@@ -138,6 +138,7 @@ class Formatter(object):
                 lines.append("")
         if not lines:
             return '""'
+        lines = [line.replace('\\', r'\\') for line in lines]
         lines = [line.replace('"', r'\"') for line in lines]
         template = '{indent}"{line}\\n"'
         return "\n".join(

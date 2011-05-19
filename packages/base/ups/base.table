@@ -1,4 +1,4 @@
-setupRequired("boost == 1.46.1+jb0")
+setupRequired("boost == 1.46.1+bp")
 setupRequired("scons == bp")
 setupRequired("doxygen")
 

@@ -1,0 +1,6 @@
+
+using mpi  :  ${MPICH2_DIR}/bin/mpicxx
+           : <include>${MPICH2_DIR}/include 
+             <cxxflags>-DMPICH_IGNORE_CXX_SEEK 
+             <library-path>${MPICH2_DIR}/lib 
+             <find-shared-library>mpich  ;

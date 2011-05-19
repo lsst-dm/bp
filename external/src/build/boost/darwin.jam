@@ -1,0 +1,4 @@
+
+# Link with MPI on darwin
+flags darwin.link.dll OPTIONS : -L$MPICH2_DIR/lib -lpmpich -lmpich ;
+

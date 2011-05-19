@@ -40,14 +40,17 @@ except SystemError:
     # ...if it does it should throw a SystemError
     pass
 
-if RTLD_GLOBAL < 0:
-    import lsst64defs
-    RTLD_GLOBAL = lsst64defs.RTLD_GLOBAL   # usually 0x00100
-if RTLD_NOW < 0:
-    import lsst64defs
-    RTLD_NOW = lsst64defs.RTLD_NOW         # usually 0x00002
-
-dlflags = RTLD_GLOBAL|RTLD_NOW
-if dlflags != 0:
-    sys.setdlopenflags(dlflags)
-
+try:
+    if RTLD_GLOBAL < 0:
+        import lsst64defs
+        RTLD_GLOBAL = lsst64defs.RTLD_GLOBAL   # usually 0x00100
+    if RTLD_NOW < 0:
+        import lsst64defs
+        RTLD_NOW = lsst64defs.RTLD_NOW         # usually 0x00002
+    dlflags = RTLD_GLOBAL|RTLD_NOW
+    if dlflags != 0:
+        sys.setdlopenflags(dlflags)
+except ImportError:
+    # This is okay if we're bootstrapping a new base package,
+    # but it's a big problem for C++-coded Python packages.
+    sys.stderr.write("WARNING: could not import lsst64defs.\n")

@@ -1,5 +1,5 @@
 setupRequired(scons bp)
-setupOptional(ipython 0.10.2+jb0)
+setupOptional(ipython 0.10.2+bp)
 setupRequired(base bp)
 setupRequired(ndarray bp)
 setupRequired(bputils bp)
@@ -12,5 +12,6 @@ setupRequired(daf_persistence bp)
 setupRequired(security bp)
 setupRequired(daf_data bp)
 setupRequired(afw bp)
+setupRequired(doxygen 1.7.4)
 
 envPrepend(PATH, ${PRODUCT_DIR}/bin)

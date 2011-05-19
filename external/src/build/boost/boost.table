@@ -1,0 +1,5 @@
+setupRequired(mpich2)
+setupRequired(python >= 2.7.1)
+envAppend(PATH, ${PRODUCT_DIR}/bin)
+envAppend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
+envAppend(DYLD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)

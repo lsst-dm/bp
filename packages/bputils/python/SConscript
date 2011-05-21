@@ -4,4 +4,7 @@ import os.path
 
 package = os.path.join("lsst", "/".join(env["eups_product"].split("_")), "_" + env["eups_product"])
 
-env.LoadableModuleIncomplete(package, Glob("#pysrc/*.cc"), LIBS=env.getLibs("main python"))
+env.LoadableModuleIncomplete(package, Glob("#pysrc/_bputils.cc"), LIBS=env.getLibs("main python"))
+
+env.LoadableModuleIncomplete(os.path.join("bpdox", "_bpdox"), Glob("#pysrc/bpdox/*.cc"), 
+                             LIBS=env.getLibs("python"))

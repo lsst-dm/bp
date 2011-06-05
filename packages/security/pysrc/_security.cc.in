@@ -5,27 +5,13 @@
 
 namespace bp = boost::python;
 
-namespace lsst { namespace security { %%scope(lsst::security)%%
+@Customize {}
 
-namespace {
+@Namespace(lsst::security) {
 
-struct PySecurity {
+    @Class(Security) {};
 
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Security>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-
-};
-
-} // anonymous
-
-}} // namespace lsst::security
+}
 
 BOOST_PYTHON_MODULE(_security) {
     lsst::security::PySecurity::declare();

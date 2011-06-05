@@ -9,111 +9,30 @@
 
 namespace bp = boost::python;
 
-namespace lsst { namespace daf { namespace data { %%scope(lsst::daf::data)%%
+@Customize {}
 
-namespace {
+@Namespace(lsst::daf::data) {
 
-struct PyProvenance {
+    @Class(Provenance) {};
 
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Provenance>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
+    @Class(ReleaseProcess) {};
 
-};
+    @Class(
+        LsstData, noncopyable=True, 
+        exclude_list=[getChildren, Container, ContainerIterator, IteratorRange]
+    ) {};
 
-struct PyReleaseProcess {
+    @Class(LsstImpl_DC3, exclude_list=[LsstImpl_DC3, getChildren], noncopyable=True) {};
 
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<ReleaseProcess>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
+    @Class(LsstBase, exclude_list=[LsstBase], noncopyable=True) {};
 
-};
+    @Class(LsstDataConfigurator, noncopyable=True) {};
 
-struct PyLsstData {
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<LsstData,noncopyable>%%
-        );
-        %%ignore_members(getChildren)%%;
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-
-};
-
-struct PyLsstImpl_DC3 {
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<LsstImpl_DC3,noncopyable>%%
-        );
-        %%ignore_members(LsstImpl_DC3,getChildren)%%;
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-
-};
-
-struct PyLsstBase {
-    
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<LsstBase,noncopyable>%%
-        );        
-        %%ignore_members(LsstBase)%%;
-        wrapper
-            .enable_shared_ptr()
-            ;
-        %%finish_class%%;
-    }
-
-};
-
-struct PyLsstDataConfigurator {
-    
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<LsstDataConfigurator,noncopyable>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-
-};
-
-struct PySupportFactory {
-    
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<SupportFactory,noncopyable>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_method(the, bp::return_value_policy< bp::reference_existing_object >())%%
-            ;
-        %%finish_class%%;
-    }
-
-};
+    @Class(SupportFactory, noncopyable=True) {
+        @Customize {
+            wrapper.@Member(the, policies={bp::return_value_policy< bp::reference_existing_object >()});
+        }
+    };
 
 void declare() {
     PyProvenance::declare();
@@ -125,9 +44,7 @@ void declare() {
     PySupportFactory::declare();
 }
 
-} // anonymous
-
-}}} // namespace lsst::daf::data
+}
 
 BOOST_PYTHON_MODULE(_daf_data) {
     lsst::bputils::registerConversions();

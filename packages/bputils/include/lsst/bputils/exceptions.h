@@ -26,17 +26,20 @@ private:
     }
 };
 
-void addExceptionProxy(char const * name, boost::python::object & wrapper);
+void addExceptionProxy(char const * name, char const * doc, boost::python::object & wrapper);
 
 } // namespace detail
 
+// Define a trivial LSST Exception class.
 template <typename T, typename Base>
 boost::python::class_< T, boost::python::bases<Base> >
-declareException(char const * name) {
+declareException(char const * name, char const * doc="") {
     std::string cppName("LsstCpp");
     cppName += name;
-    boost::python::class_< T, boost::python::bases<Base> > wrapper(cppName.c_str(), boost::python::no_init);
-    detail::addExceptionProxy(name, wrapper);
+    boost::python::class_< T, boost::python::bases<Base> > wrapper(
+        cppName.c_str(), doc, boost::python::no_init
+    );
+    detail::addExceptionProxy(name, doc, wrapper);
     detail::ExceptionConverter<T>();
     boost::python::register_ptr_to_python< boost::shared_ptr<T> >();
     return wrapper;

@@ -115,28 +115,14 @@ void SpatialCell::insertCandidate(SpatialCellCandidate::Ptr candidate) {
  * Determine if cell has no usable candidates
  */
 bool SpatialCell::empty() const {
-    // Cast away const;  end is only non-const as it provides access to the Candidates
-    // and we don't (yet) have SpatialCellCandidateConstIterator
-    SpatialCell *mthis = const_cast<SpatialCell *>(this);
-
-    for (SpatialCellCandidateIterator ptr = mthis->begin(), end = mthis->end(); ptr != end; ++ptr) {
-        if (!(_ignoreBad && (*ptr)->isBad())) { // found a good candidate, or don't care
-            return false;
-        }
-    }
-
-    return true;
+    return begin() == end();
 }
 
 /**
  * Return number of usable candidates in Cell
  */
 size_t SpatialCell::size() const {
-    // Cast away const; begin/end is only non-const as they provide access to the Candidates
-    // and we don't (yet) have SpatialCellCandidateConstIterator
-    SpatialCell *mthis = const_cast<SpatialCell *>(this);
-
-    return mthis->end() - mthis->begin();
+    return std::distance(begin(), end());
 }
 
 /************************************************************************************************************/
@@ -148,7 +134,7 @@ size_t SpatialCell::size() const {
 SpatialCellCandidate::Ptr SpatialCell::getCandidateById(int id, ///< The desired ID
                                                         bool noThrow ///< Return NULL in case of error
                                                        ) {
-    for (SpatialCellCandidateIterator ptr = begin(), end = this->end(); ptr != end; ++ptr) {
+    for (const_iterator ptr = begin(), end = this->end(); ptr != end; ++ptr) {
         if ((*ptr)->getId() == id) {
             return *ptr;
         }
@@ -306,90 +292,6 @@ void SpatialCell::visitAllCandidates(
         }
     }
 #endif
-}
-    
-/************************************************************************************************************/
-/// ctor; designed to be used to pass begin to SpatialCellCandidateIterator
-SpatialCellCandidateIterator::SpatialCellCandidateIterator(
-        CandidateList::iterator iterator, ///< Where this iterator should start
-        CandidateList::iterator end,      ///< One-past-the-end of iterator's range
-        bool ignoreBad                      ///< Should we pass over bad Candidates?
-                                                          )
-    : _iterator(iterator), _end(end), _ignoreBad(ignoreBad) {
-    for (; _iterator != _end; ++_iterator) {
-        (*_iterator)->instantiate();
-        
-        if (!(_ignoreBad && (*_iterator)->isBad())) { // found a good candidate, or don't care
-            return;
-        }
-    }
-}
-
-/// ctor; designed to be used to pass end to SpatialCellCandidateIterator
-SpatialCellCandidateIterator::SpatialCellCandidateIterator(
-        CandidateList::iterator,          ///< start of of iterator's range; not used
-        CandidateList::iterator end,      ///< Where this iterator should start
-        bool ignoreBad,                     ///< Should we pass over bad Candidates?
-        bool
-                                                          )
-    : _iterator(end), _end(end), _ignoreBad(ignoreBad) {
-    if (ignoreBad) {
-        // We could decrement end if there are bad Candidates at the end of the list, but it's probably
-        // not worth the trouble
-    }
-}
-
-/**
- * Advance the iterator, maybe skipping over candidates labelled BAD
- */
-void SpatialCellCandidateIterator::operator++() {
-    if (_iterator != _end) {
-        ++_iterator;
-    }
-    
-    for (; _iterator != _end; ++_iterator) {
-        (*_iterator)->instantiate();
-        
-        if (!(_ignoreBad && (*_iterator)->isBad())) { // found a good candidate, or don't care
-            return;
-        }
-    }
-}
-
-/**
- * Return the number of candidate between this and rhs
- */
-size_t SpatialCellCandidateIterator::operator-(SpatialCellCandidateIterator const& rhs) const {
-    size_t n = 0;
-    for (SpatialCellCandidateIterator ptr = rhs; ptr != *this; ++ptr) {
-        if (!(_ignoreBad && (*ptr)->isBad())) { // found a good candidate, or don't care
-            ++n;
-        }
-    }
-
-    return n;
-}
-
-/**
- * Dereference the iterator to return the Candidate (if there is one)
- *
- * @throw lsst::pex::exceptions::NotFoundException if no candidate is available
- */
-SpatialCellCandidate::ConstPtr SpatialCellCandidateIterator::operator*() const {
-    if (_iterator == _end) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::NotFoundException, "Iterator points to end");
-    }
-
-    return *_iterator;
-}
-
-/// Return the CellCandidate::Ptr
-SpatialCellCandidate::Ptr SpatialCellCandidateIterator::operator*() {
-    if (_iterator == _end) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::NotFoundException, "Iterator points to end");
-    }
-
-    return *_iterator;
 }
     
 /************************************************************************************************************/

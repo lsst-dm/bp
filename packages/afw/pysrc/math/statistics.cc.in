@@ -1,0 +1,46 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/math/Statistics.h"
+
+namespace bp = boost::python;
+
+@Customize {}
+
+@Namespace(lsst::afw::math) {
+
+    @Class(StatisticsControl) {};
+
+    @Class(Statistics) {};
+
+    template <typename ImageT, typename MaskT, typename VarianceT>
+    void declareStatsIMV() {
+        @Function(makeStatistics[imv], tparams={<ImageT,MaskT,VarianceT>});
+    }
+
+    template <typename EntryT>
+    void declareStatsVec() {
+        @Function(makeStatistics[vec,mvec], tparams={<EntryT>});
+    }
+
+    template <typename Pixel>
+    void declareStats() {
+        declareStatsVec< Pixel >();
+        declareStatsIMV< image::Image<Pixel>, image::Mask<image::MaskPixel>, 
+            image::Image<image::VariancePixel> >();
+        @Function(makeStatistics[im, mi, i], tparams={<Pixel>});
+    }
+
+}
+
+@Namespace(lsst::afw::math, anonymous=False) {
+    void declareStatistics() {
+        @Enum(Property);
+        @Function(stringToStatisticsProperty);
+        PyStatisticsControl::declare();
+        PyStatistics::declare();
+        declareStats<boost::uint16_t>();
+        declareStats<int>();
+        declareStats<float>();
+        declareStats<double>();
+        @Function(makeStatistics[m]);
+    }
+}

@@ -1,0 +1,63 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/math/Background.h"
+
+namespace bp = boost::python;
+
+@Customize {}
+
+@Namespace(lsst::afw::math) {
+
+    @Class(BackgroundControl) {};
+
+    @Class(Background) {
+        template <typename T, typename Wrapper>
+        static void declareTemplates(Wrapper & wrapper, std::string const & t) {
+            wrapper.def(
+                bp::init<image::Image<T> const &, BackgroundControl const &>(
+                    (bp::arg("img"), bp::arg("bgCtrl")=BackgroundControl())
+                )
+            );
+            wrapper.def(
+                bp::init<image::MaskedImage<T> const &, BackgroundControl const &>(
+                    (bp::arg("img"), bp::arg("bgCtrl")=BackgroundControl())
+                )
+            );
+            wrapper.def(
+                ("getImage" + t).c_str(), &Background::getImage<T>,
+                @Doc(getImage)
+            );
+        }
+        @Customize {
+            declareTemplates<double>(wrapper, "D");
+            declareTemplates<float>(wrapper, "F");
+            declareTemplates<int>(wrapper, "I");
+        }
+    };
+
+    template <typename T>
+    void declareBackgroundT() {
+        bp::def(
+            "makeBackground", &makeBackground< image::Image<T> >, 
+            (bp::arg("img"), bp::arg("bgCtrl")=BackgroundControl())
+        );
+        bp::def(
+            "makeBackground", &makeBackground< image::MaskedImage<T> >, 
+            (bp::arg("img"), bp::arg("bgCtrl")=BackgroundControl())
+        );
+    }
+
+}
+
+@Namespace(lsst::afw::math, anonymous=False) {
+
+    void declareBackground() {
+        @Enum(UndersampleStyle);
+        @Function(stringToUndersampleStyle);
+        PyBackgroundControl::declare();
+        PyBackground::declare();
+        declareBackgroundT<int>();
+        declareBackgroundT<float>();
+        declareBackgroundT<double>();
+    }
+
+}

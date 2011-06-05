@@ -21,6 +21,7 @@ void Macro::reorderOptions(bp::object const & names) {
         ordered.splice(ordered.end(), _options, j);
     }
     ordered.splice(ordered.end(), _options);
+    ordered.swap(_options);
 }
 
 bp::dict Macro::getDefaults() const {
@@ -29,20 +30,6 @@ bp::dict Macro::getDefaults() const {
         result[i->name] = i->default_;
     }
     return result;
-}
-
-void Macro::call(
-    PyObject * self, char const * method, std::string & output, 
-    int indent, bp::dict const & options, bp::object const & state
-) const {
-    bp::handle<> result(PyObject_CallMethod(self, (char*)method, (char*)"dOO", 
-                                            indent, options.ptr(), state.ptr()));
-    char * buffer;
-    Py_ssize_t length;
-    if (PyString_AsStringAndSize(result.get(), &buffer, &length) < 0) {
-        bp::throw_error_already_set();
-    }
-    output.append(buffer, length);
 }
 
 } // namespace bpdox

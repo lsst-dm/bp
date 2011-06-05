@@ -210,28 +210,24 @@ public:
     /**
      * return the read-only data properties that make up this log message.
      * This is a synonym for data().
-     * @bpdox{label:const}
      */
     const dafBase::PropertySet& getProperties() const { return data(); }
 
     /**
      * return the data properties that make up this log message.  
      * This is a synonym for data().
-     * @bpdox{label:nonconst}
      */
     dafBase::PropertySet& getProperties() { return data(); }
 
     /**
      * return the data properties that make up this log message.  
      * This is a synonym for getProperties().
-     * @bpdox{label:const}
      */
     const dafBase::PropertySet& data() const { return *_data; }
 
     /**
      * return the data properties that make up this log message.  
      * This is a synonym for getProperties().
-     * @bpdox{label:nonconst}
      */
     dafBase::PropertySet& data() { return *_data; }
 

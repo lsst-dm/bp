@@ -46,23 +46,11 @@ public:
 
     OptionList const & getOptions() const { return _options; }
 
-    // Generate the output text for the macro and return true if the macro is a block macro.
-    virtual bool apply(
-        std::string & output, int indent, bp::dict const & options, bp::object const & state
-    ) const = 0;
-
-    virtual void finish(
-        std::string & output, int indent, bp::dict const & options, bp::object const & state
-    ) const {}
+    virtual bool isBlock() const = 0;
 
     virtual ~Macro() {}
 
 protected:
-
-    void call(
-        PyObject * self, char const * method, std::string & output, int indent, 
-        bp::dict const & options, bp::object const & state
-    ) const;
 
     explicit Macro(std::string const & name) : _name(name) {}
 
@@ -73,41 +61,19 @@ protected:
 class SimpleMacro : public Macro {
 public:
 
-    explicit SimpleMacro(PyObject * self, std::string const & name) :
-        Macro(name), _self(self) {}
+    explicit SimpleMacro(std::string const & name) : Macro(name) {}
 
-    virtual bool apply(
-        std::string & output, int indent, bp::dict const & options, bp::object const & state
-    ) const {
-        call(_self, "apply", output, indent, options, state);
-        return false;
-    }
+    virtual bool isBlock() const { return false; }
 
-private:
-    PyObject * _self;
 };
 
 class BlockMacro : public Macro {
 public:
 
-    explicit BlockMacro(PyObject * self, std::string const & name) :
-        Macro(name), _self(self) {}
+    explicit BlockMacro(std::string const & name) : Macro(name) {}
 
-    virtual bool apply(
-        std::string & output, int indent, bp::dict const & options, bp::object const & state
-    ) const {
-        call(_self, "apply", output, indent, options, state);
-        return true;
-    }
+    virtual bool isBlock() const { return true; }
 
-    virtual void finish(
-        std::string & output, int indent, bp::dict const & options, bp::object const & state
-    ) const {
-        call(_self, "finish", output, indent, options, state);
-    }
-
-private:
-    PyObject * _self;    
 };
 
 } // namespace bpdox

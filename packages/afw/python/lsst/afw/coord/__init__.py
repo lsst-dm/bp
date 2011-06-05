@@ -20,4 +20,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from coordLib import *
+import lsst.bputils
+from . import _afw_coord
+
+lsst.bputils.rescope(_afw_coord, globals(), ignore=())

@@ -18,7 +18,9 @@ void Parser::parse() {
     while (_current != _end) {
         switch (*_current) {
         case '"':
+            _output.push_back(*_current);
             _output += readString();
+            _output.push_back('"');
             break;
         case MARKER:
             parseMacro();
@@ -35,14 +37,26 @@ void Parser::parse() {
         case '}':
             --_braces;
             if (!_active.empty() && _braces == _active.back().braces) {
-                _active.back().macro->finish(
-                    _output, _active.back().indent, _active.back().options, _processor.getState()
+                _data.append(_output);
+                _output.clear();
+                _data.append(
+                    bp::make_tuple(
+                        _active.back().macro, 
+                        "finish", 
+                        std::string(_active.back().indent, ' '),
+                        _active.back().lineNumber,
+                        _active.back().options
+                    )
                 );
                 _active.pop_back();
                 ++_current;
                 ++_indent;
             } else if (_braces < 0) {
                 throwSyntaxError(boost::format("Unmatched '}' on line %d.") % _lineNumber);
+            } else {
+                _output.push_back(*_current);
+                ++_current;
+                ++_indent;
             }
             break;
         case '{':
@@ -53,6 +67,7 @@ void Parser::parse() {
             ++_indent;
         }
     }
+    _data.append(_output);
     if (_braces > 0) {
         throwSyntaxError(boost::format("Unmatched '{' at end of file."));
     }
@@ -72,11 +87,12 @@ void Parser::parseMacro() {
         return;
     }
     int macroIndent = _indent;
+    int macroLineNumber = _lineNumber;
     std::string macroName = readWord();
     boost::shared_ptr<Macro> macro = _processor.findMacro(macroName);
     if (!macro) {
         _output.push_back(MARKER);
-        ++_current;
+        _output.append(macroName);
         return;
     }
     consumeSpace();
@@ -86,7 +102,18 @@ void Parser::parseMacro() {
     } else {
         options = macro->getDefaults();
     }
-    bool isBlock = macro->apply(_output, macroIndent, options, _processor.getState());
+    _data.append(_output);
+    _output.clear();
+    _data.append(
+        bp::make_tuple(
+            macro, 
+            "apply", 
+            std::string(macroIndent, ' '),
+            macroLineNumber,
+            options
+        )
+    );
+    bool isBlock = macro->isBlock();
     if (isBlock) {
         consumeSpace();
         if (_current == _end || *_current != '{') {
@@ -95,7 +122,7 @@ void Parser::parseMacro() {
                 % macroName % _lineNumber
             );
         }
-        ActiveBlock block = { _braces, macroIndent, options, macro };
+        ActiveBlock block = { _braces, macroIndent, macroLineNumber, options, macro };
         _active.push_back(block);
         ++_braces;
         ++_current;
@@ -181,7 +208,7 @@ bp::dict Parser::processArgs(Macro & macro) {
                     // process this argument in the next one.
                     positional = options.end();
                     break;
-                } else if (*i == ',') {
+                } else if (*i == ',' || *i == ')') {
                     if (!inBrackets) {
                         // We found a comma outside of any square brackets before we encounted
                         // a '='; it's a positional argument.
@@ -234,6 +261,7 @@ bp::dict Parser::processArgs(Macro & macro) {
                 % (*_current) % _lineNumber
             );
         }
+        ++_current;
         consumeSpace(true);
         OptionList::const_iterator option = macro.findOption(kwd);
         if (option == options.end()) {
@@ -353,7 +381,9 @@ std::string Parser::readCode() {
             break;
         case '"':
             result.append(begin, _current);
+            result.push_back('"');
             result += readString();
+            result.push_back('"');
             begin = _current;
             break;
         case '\n':
@@ -406,9 +436,14 @@ bp::tuple Parser::readRef() {
                 if (finishArg(']')) return bp::make_tuple(name, labels);
             }
         } else {
-            throwSyntaxError(
-                boost::format("Invalid character '%c' in ref value on line %d.") % (*_current) % _lineNumber
-            );
+            consumeSpace(true);
+            if (*_current == ',' || *_current == ')' || *_current == ']') {
+                return bp::make_tuple(name, bp::object());
+            } else {
+                throwSyntaxError(
+                    boost::format("Error processing list argument on line %d.") % _lineNumber
+                );                
+            }
         }
     }
     throwSyntaxError(

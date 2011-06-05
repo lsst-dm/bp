@@ -4,7 +4,7 @@ import os.path
 
 srcOut = []
 for srcIn in Glob("#pysrc/*.cc.in"):
-    srcOut.extend(env.BPDox(srcIn))
+    srcOut.extend(env.BPDox(srcIn, "daf_base"))
 
 env.Depends(srcOut, "#doc")
 

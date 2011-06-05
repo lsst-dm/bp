@@ -1,5 +1,6 @@
 #include "boost/python.hpp"
 #include "boost/python/const_aware.hpp"
+#include "boost/python/lookup_type.hpp"
 #include "boost/python/to_python/const_reference_defaults.hpp"
 #include "boost/shared_ptr.hpp"
 
@@ -30,6 +31,22 @@ public:
 
     Example(int v) : value(v)
     {}
+
+    Example operator+(Example const & other) const { return Example(value + other.value); }
+
+    Example operator+(int other) const { return Example(value + other); }
+
+    inline friend Example operator+(int a, Example const & b) { return Example(a + b.value); }
+
+    Example & operator+=(Example const & other) {
+        value += other.value;
+        return *this;
+    }
+
+    Example & operator+=(int other) {
+        value += other;
+        return *this;
+    }
 
 };
 
@@ -67,6 +84,8 @@ struct ConstAwareOwner {
 
 class Owner {
 public:
+    typedef Example Ex;
+
     Example by_value() const { return *example_ptr_member; }
     Example const by_const_value() const { return *example_ptr_member; }
     Example & by_reference() { return *example_ptr_member; }
@@ -134,6 +153,11 @@ static void export_module() {
         .def(bp::init<int>((bp::arg("value")=0)))
         .def("freeFunctionC", &freeFunctionC)
         .def("freeFunctionNC", &freeFunctionNC)
+        .def(bp::self + bp::self)
+        .def(bp::self + int())
+        .def(int() + bp::self)
+        .def(bp::self += bp::self)
+        .def(bp::self += int())
         ;
 
     bp::const_aware::exposer<ConstAwareOwner>("ConstAwareOwner")
@@ -148,11 +172,11 @@ static void export_module() {
         ;
 
     bp::class_<Owner>("Owner")
+        .add_static_property("Ex", &bp::lookup_type<Example>)
         .def("by_value", &Owner::by_value)
         .def("by_const_value", &Owner::by_const_value, bp::as_const<>())
-        .def("by_reference", &Owner::by_reference, bp::return_internal_reference<>())
-        .def("by_const_reference", &Owner::by_const_reference, 
-             bp::as_const< bp::return_internal_reference<> >())
+        .def("by_reference", &Owner::by_reference, bp::const_aware::return_internal<>())
+        .def("by_const_reference", &Owner::by_const_reference, bp::const_aware::return_internal<>())
         .def("by_shared_ptr", &Owner::by_shared_ptr)
         .def("by_const_shared_ptr", &Owner::by_const_shared_ptr)
         .def("accept_by_value", &Owner::accept_by_value)

@@ -1,0 +1,90 @@
+#include "lsst/bputils.h"
+#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/afw/image/Image.h"
+#include "lsst/afw/formatters/ImageFormatter.h"
+#include "lsst/afw/formatters/DecoratedImageFormatter.h"
+
+#include "boost/python/ndarray.hpp"
+
+namespace bp = boost::python;
+
+@Namespace(lsst::afw::image) {
+
+    template <typename PixelT>
+    @TemplateClass(
+        ImageBase, tparams={<PixelT>}, include_regex="(get|set)\w+",
+        include_list=[indexToPosition, positionToIndex]
+    ) {
+        typedef typename ImageBase<PixelT>::Array Array;
+        typedef typename ImageBase<PixelT>::ConstArray ConstArray;
+        @Customize {
+            wrapper.def(bp::self <<= bp::self);
+        }
+    };
+
+    template <typename PixelT>
+    @TemplateClass(
+        Image, tparams={<PixelT>}, include_regex="scaled\w+",
+        include_list=[Image, writeFits, swap]
+    ) {
+        static void setAll(Image<PixelT> & self, PixelT value) { self = value; }
+        static void setPixel(Image<PixelT> & self, int x, int y, PixelT value) {
+            self(x, y, CheckIndices(true)) = value;
+        }
+        static PixelT getPixel(Image<PixelT> const & self, int x, int y) {
+            return self(x, y, CheckIndices(true));
+        }
+        template <typename OtherT> static Image<OtherT> convert(Image<PixelT> const & self) {
+            return Image<OtherT>(self, true);
+        }
+        @Customize {
+            bputils::BoostPickleInterface< Image<PixelT> >::apply(wrapper);
+            wrapper.def("set", &setAll);
+            wrapper.def("set", &setPixel);
+            wrapper.def("get", &getPixel);
+            wrapper.def(bp::self += bp::self);
+            wrapper.def(bp::self += bp::other<PixelT>());
+            wrapper.def(bp::self += bp::other< math::Function2<double> >());
+            wrapper.def(bp::self -= bp::self);
+            wrapper.def(bp::self -= bp::other<PixelT>());
+            wrapper.def(bp::self -= bp::other< math::Function2<double> >());
+            wrapper.def(bp::self *= bp::self);
+            wrapper.def(bp::self *= bp::other<PixelT>());
+            wrapper.def(bp::self /= bp::self);
+            wrapper.def(bp::self /= bp::other<PixelT>());
+            wrapper.def("convertU", &convert<boost::uint16_t>);
+            wrapper.def("convertI", &convert<int>);
+            wrapper.def("convertF", &convert<float>);
+            wrapper.def("convertD", &convert<double>);
+        }
+    };
+
+    template <typename PixelT>
+    @TemplateClass(
+        DecoratedImage, tparams={<PixelT>}, include_regex="(get|set)\w+",
+        include_list=[DecoratedImage, swap, writeFits]
+    ) {
+        @Customize {
+            /// Doxygen bug #648719 forces manual wrap of this constructor
+            wrapper.def(bp::init< typename Image<PixelT>::Ptr >());
+            bputils::BoostPickleInterface< DecoratedImage<PixelT> >::apply(wrapper);
+        }
+    };
+
+    template <typename PixelT>
+    void instantiateImage(std::string const & t) {
+        PyImageBase<PixelT>::declare(("Image" + t + "Base").c_str());
+        PyImage<PixelT>::declare(("Image" + t).c_str());
+        PyDecoratedImage<PixelT>::declare(("DecoratedImage" + t).c_str());
+    }
+
+}
+
+@Namespace(lsst::afw::image, anonymous=False) {
+    void declareImage() {
+        instantiateImage<boost::uint16_t>("U");
+        instantiateImage<int>("I");
+        instantiateImage<float>("F");
+        instantiateImage<double>("D");
+    }
+}

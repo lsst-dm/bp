@@ -31,7 +31,7 @@ try:
 except ImportError, e:
     print >> sys.stderr, "Cannot import xpa: %s" % e
 
-import displayLib
+import _afw_display
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 
@@ -494,7 +494,7 @@ def _mtv(data, wcs, title, isMask):
 
     try:
         #import pdb; pdb.set_trace()
-        displayLib.writeFitsImage(pfd.fileno(), data, wcs, title)
+        _afw_display.writeFitsImage(pfd.fileno(), data, wcs, title)
     except Exception, e:
         try:
             pfd.close()

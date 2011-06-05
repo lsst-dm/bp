@@ -3,16 +3,16 @@
 
 namespace bpdox {
 
-std::string Processor::process(bp::str const & input) const {
-    std::string result;
+bp::list Processor::process(bp::str const & input) const {
     char * buffer;
     Py_ssize_t length;
     if (PyString_AsStringAndSize(input.ptr(), &buffer, &length) < 0) {
         bp::throw_error_already_set();
     }
-    Parser parser(buffer, buffer + length, result, *this);
+    bp::list data;
+    Parser parser(buffer, buffer + length, *this, data);
     parser.parse();
-    return result;
+    return data;
 }
 
 boost::shared_ptr<Macro> Processor::findMacro(std::string const & name) const {

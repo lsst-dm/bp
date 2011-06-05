@@ -1,0 +1,40 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/image/ImagePca.h"
+#include "lsst/afw/image/Image.h"
+#include "lsst/afw/image/MaskedImage.h"
+
+namespace bp = boost::python;
+
+@Namespace(lsst::afw::image) {
+
+    template <typename ImageT>
+    @TemplateClass(ImagePca, tparams={<ImageT>}, exclude_list=[ImageList, getMean]) {
+        @Customize {
+            wrapper.@MemberList(
+                [getImageList, getEigenImages, getEigenValues],
+                policies={bp::return_value_policy< bp::copy_to_list >()}
+            );
+        }
+    };
+
+    template <typename PixelT>
+    void instantiateImagePca(std::string const & t) {
+        PyImagePca< Image<PixelT> >::declare(("ImagePca" + t).c_str());
+        PyImagePca< MaskedImage<PixelT> >::declare(("ImagePcaM" + t).c_str());
+        bp::def(
+            "innerProduct", &innerProduct< Image<PixelT>, Image<PixelT> >,
+            (bp::arg("lhs"), bp::arg("rhs"), bp::arg("border")=0),
+            @Doc(innerProduct)
+        );
+    }
+
+}
+
+@Namespace(lsst::afw::image, anonymous=False) {
+    void declareImagePca() {
+        instantiateImagePca<boost::uint16_t>("U");
+        instantiateImagePca<int>("I");
+        instantiateImagePca<float>("F");
+        instantiateImagePca<double>("D");
+    }
+}

@@ -752,7 +752,7 @@ STRIP_CODE_COMMENTS    = YES
 # then for each documented function all documented
 # functions referencing it will be listed.
 
-REFERENCED_BY_RELATION = NO
+REFERENCED_BY_RELATION = YES
 
 # If the REFERENCES_RELATION tag is set to YES
 # then for each documented function all documented entities
@@ -790,7 +790,7 @@ VERBATIM_HEADERS       = YES
 # of all compounds will be generated. Enable this if the project
 # contains a lot of classes, structs, unions or interfaces.
 
-ALPHABETICAL_INDEX     = YES
+ALPHABETICAL_INDEX     = NO
 
 # If the alphabetical index is enabled (see ALPHABETICAL_INDEX) then
 # the COLS_IN_ALPHA_INDEX tag can be used to specify the number of columns

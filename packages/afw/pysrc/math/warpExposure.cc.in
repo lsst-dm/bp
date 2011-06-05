@@ -1,0 +1,80 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/math/warpExposure.h"
+#include "lsst/afw/math/offsetImage.h"
+
+namespace bp = boost::python;
+
+@Customize {}
+
+@Namespace(lsst::afw::math) {
+
+    @Class(LanczosWarpingKernel, noncopyable=True) {};
+
+    @Class(BilinearWarpingKernel, noncopyable=True) {
+        @Class(BilinearFunction1, bases={Function1<Kernel::Pixel>}) {};
+    };
+
+    @Class(NearestWarpingKernel, noncopyable=True) {
+        @Class(NearestFunction1, bases={Function1<Kernel::Pixel>}) {};
+    };
+
+    template <typename DestPixelT, typename SrcPixelT> void declareWarpExposureT() {
+        typedef image::Exposure<DestPixelT,image::MaskPixel,image::VariancePixel> DestExposureT;
+        typedef image::Exposure<SrcPixelT,image::MaskPixel,image::VariancePixel> SrcExposureT;
+        @Function(warpExposure, tparams={<DestExposureT,SrcExposureT>});
+        typedef image::Image<DestPixelT> DestImageT;
+        typedef image::Image<SrcPixelT> SrcImageT;
+        @Function(warpImage, tparams={<DestImageT,SrcImageT>});
+    }
+
+    template <typename ImageT> void declareOffsetImage(boost::mpl::true_ * is_floating) {
+        @Function(offsetImage, tparams={<ImageT>}, pointer={&offsetImage<ImageT>});        
+    }
+
+    template <typename ImageT> void declareOffsetImage(boost::mpl::false_ * is_floating) {}
+
+    template <typename T> void declareImageTransforms() {
+        {
+            typedef image::Image<T> ImageT;
+            @Function(binImage, tparams={<ImageT>}, pointer={&binImage<ImageT>});
+            @Function(flipImage, tparams={<ImageT>}, pointer={&flipImage<ImageT>});
+            @Function(rotateImageBy90, tparams={<ImageT>}, pointer={&rotateImageBy90<ImageT>});
+            declareOffsetImage<ImageT>((typename boost::is_floating_point<T>::type*)0);
+        }
+        {
+            typedef image::MaskedImage<T,image::MaskPixel,image::VariancePixel> ImageT;
+            @Function(binImage, tparams={<ImageT>}, pointer={&binImage<ImageT>});
+            declareOffsetImage<ImageT>((typename boost::is_floating_point<T>::type*)0);
+        }
+    } 
+        
+}
+
+@Namespace(lsst::afw::math, anonymous=False) {
+
+    void declareWarpExposure() {
+        PyLanczosWarpingKernel::declare();
+        PyBilinearWarpingKernel::declare();
+        PyBilinearWarpingKernel::PyBilinearFunction1::declare();
+        PyNearestWarpingKernel::declare();
+        PyNearestWarpingKernel::PyNearestFunction1::declare();
+        @Function(makeWarpingKernel);
+        declareWarpExposureT<float, boost::uint16_t>();
+        declareWarpExposureT<double, boost::uint16_t>();
+        declareWarpExposureT<float, int>();
+        declareWarpExposureT<double, int>();
+        declareWarpExposureT<float, float>();
+        declareWarpExposureT<double, float>();
+        declareWarpExposureT<double, double>();
+        
+        declareImageTransforms<boost::uint16_t>();
+        declareImageTransforms<int>();
+        declareImageTransforms<float>();
+        declareImageTransforms<double>();
+
+        typedef image::Mask<boost::uint16_t> ImageT;
+        @Function(flipImage, tparams={<ImageT>});
+        @Function(rotateImageBy90, tparams={<ImageT>});
+    }
+
+}

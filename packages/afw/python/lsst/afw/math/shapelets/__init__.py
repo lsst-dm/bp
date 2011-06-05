@@ -20,7 +20,22 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from shapeletsLib import *
-from lsst.afw.geom import ellipses
+import lsst.bputils
+import lsst.afw.geom.ellipses
+from . import _afw_math_shapelets
 
 EllipseCore = lsst.afw.geom.ellipses.Separable[ellipses.Distortion, ellipses.TraceRadius]
+
+lsst.bputils.rescope(_afw_math_shapelets, globals(), ignore=())
+
+def _evaluator_call(self, x, y=None):
+    if y is None:
+        return self._call_scalar(x)
+    else:
+        return self._call_vector(x, y)
+
+ShapeletFunctionEvaluator.__call__ = _evaluator_call
+MultiShapeletFunctionEvaluator.__call__ = _evaluator_call
+
+del _evaluator_call
+del lsst

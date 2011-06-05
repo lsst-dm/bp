@@ -58,7 +58,7 @@ namespace image {
     }
     
     /**
-     * @brief Convert image position to nearest integer index
+     *  @brief Convert image position to nearest integer index  @bpdox{label:noresidual}
      *
      * The LSST indexing convention is:
      * * the index of the bottom left pixel is 0,0
@@ -79,7 +79,7 @@ namespace image {
      * * the index of the bottom left pixel is 0,0
      * * the position of the center of the bottom left pixel is PixelZeroPos, PixelZeroPos
      *
-     * Note: in python this is called positionToIndexAndResidual
+     * Note: in python this is called positionToIndexAndResidual @bpdox{label:ignore}
      *
      * @return nearest integer index
      */
@@ -93,7 +93,7 @@ namespace image {
         return static_cast<int>(roundedIndex);
     }     
     /**
-     * @brief Convert image position to index (nearest integer and fractional parts)
+     * @brief Convert image position to index (nearest integer and fractional parts)  @bpdox{label:residual}
      *
      * @return std::pair(nearest integer index, fractional part)
      */

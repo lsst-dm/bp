@@ -11,8 +11,9 @@ public:
 
     static char const MARKER = '@';
 
-    Parser(char const * current, char const * end, std::string & output, Processor const & processor) :
-        _current(current), _end(end), _lineNumber(1), _indent(0), _output(output), _processor(processor)
+    Parser(char const * current, char const * end, Processor const & processor, bp::list data) :
+        _current(current), _end(end), _lineNumber(1), _indent(0), _braces(0),
+        _output(), _processor(processor), _data(data)
     {}
 
     void parse();
@@ -22,6 +23,7 @@ private:
     struct ActiveBlock {
         int braces;
         int indent;
+        int lineNumber;
         bp::dict options;
         boost::shared_ptr<Macro> macro;
     };
@@ -38,15 +40,15 @@ private:
     bp::tuple readRef();
     bp::list readList();
 
-
     char const * _current;
     char const * const _end;
     int _lineNumber;
     int _indent;
     int _braces;
-    std::string & _output;
+    std::string _output;
     Processor const & _processor;
     std::list<ActiveBlock> _active;
+    bp::list _data;
 };
 
 } // namespace bpdox

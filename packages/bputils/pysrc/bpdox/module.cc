@@ -4,14 +4,6 @@
 
 namespace bp = boost::python;
 
-namespace boost { namespace python {
-
-template <> struct has_back_reference<bpdox::SimpleMacro> : public boost::mpl::true_ {};
-
-template <> struct has_back_reference<bpdox::BlockMacro> : public boost::mpl::true_ {};
-
-}}
-
 BOOST_PYTHON_MODULE(_bpdox) {
 
     bp::enum_< bpdox::Option::TypeEnum >("OptionType")
@@ -42,10 +34,13 @@ BOOST_PYTHON_MODULE(_bpdox) {
         "BlockMacro", bp::init<std::string const &>()
     );
 
-    bp::class_< bpdox::Processor, boost::noncopyable >("Processor", bp::init< bp::object const & >())
+    bp::class_< bpdox::Processor, boost::noncopyable >("ProcessorBase", bp::init<>())
         .def("register", &bpdox::Processor::register_)
-        .def("process", &bpdox::Processor::process, bp::arg("input"))
+        .def("_process", &bpdox::Processor::process, bp::arg("input"))
         ;
 
+    bp::register_ptr_to_python< boost::shared_ptr<bpdox::Macro> >();
+    bp::register_ptr_to_python< boost::shared_ptr<bpdox::SimpleMacro> >();
+    bp::register_ptr_to_python< boost::shared_ptr<bpdox::BlockMacro> >();
 }
 

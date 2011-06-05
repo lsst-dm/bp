@@ -1,0 +1,94 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/math/shapelets.h"
+
+#include "boost/python/numpy.hpp"
+#include "boost/python/eigen.hpp"
+#include "boost/python/ndarray.hpp"
+
+namespace bp = boost::python;
+
+@Customize {}
+
+@Namespace(lsst::afw::math::shapelets) {
+
+    @Class(ConversionMatrix) {};
+
+    @Class(ShapeletFunction) {
+        @Customize {
+            wrapper.@Member(getEllipse, policies={bp::const_aware::return_internal<>()});
+        }
+    };
+
+    @Class(ShapeletFunctionEvaluator) {
+        @Customize {
+            wrapper.def(
+                "_call_scalar",
+                (Pixel (ShapeletFunctionEvaluator::*)(geom::Point2D const &) const)
+                &ShapeletFunctionEvaluator::operator(),
+                bp::arg("point")
+            );
+            wrapper.def(
+                "_call_scalar",
+                (Pixel (ShapeletFunctionEvaluator::*)(geom::Extent2D const &) const)
+                &ShapeletFunctionEvaluator::operator(),
+                bp::arg("point")
+            );
+            wrapper.def(
+                "_call_vector",
+                &bp::numpy::binary_ufunc<ShapeletFunctionEvaluator,double,double,double>::call,
+                (bp::arg("x"), bp::arg("y"), bp::arg("output")=bp::object())
+            );
+        }
+    };
+
+    @Class(MultiShapeletFunction, exclude_list=[getElements[nonconst]]) {
+        @Customize {
+            bp::container_from_python_sequence< MultiShapeletFunctionEvaluator::ElementList >();
+            wrapper.@Member(getElements[const], policies={bp::return_value_policy<bp::copy_to_tuple>()});
+        }
+    };
+
+    @Class(MultiShapeletFunctionEvaluator) {
+        @Customize {
+            wrapper.def(
+                "_call_scalar",
+                (Pixel (MultiShapeletFunctionEvaluator::*)(geom::Point2D const &) const)
+                &MultiShapeletFunctionEvaluator::operator(),
+                bp::arg("point")
+            );
+            wrapper.def(
+                "_call_scalar",
+                (Pixel (MultiShapeletFunctionEvaluator::*)(geom::Extent2D const &) const)
+                &MultiShapeletFunctionEvaluator::operator(),
+                bp::arg("point")
+            );
+            wrapper.def(
+                "_call_vector",
+                &bp::numpy::binary_ufunc<MultiShapeletFunctionEvaluator,double,double,double>::call,
+                (bp::arg("x"), bp::arg("y"), bp::arg("output")=bp::object())
+            );
+        }
+    };
+
+    @Class(BasisEvaluator) {};
+
+    void declare() {
+        @Enum(BasisTypeEnum);
+        @Function(computeOffset);
+        @Function(computeSize);
+        PyConversionMatrix::declare();
+        PyShapeletFunction::declare();
+        PyShapeletFunctionEvaluator::declare();
+        PyMultiShapeletFunction::declare();
+        PyMultiShapeletFunctionEvaluator::declare();
+        PyBasisEvaluator::declare();
+    }
+
+}
+
+BOOST_PYTHON_MODULE(_afw_math_shapelets) {
+    lsst::bputils::registerConversions();
+    bp::numpy::initialize();
+    bp::import("lsst.afw.geom");
+    lsst::afw::math::shapelets::declare();
+}

@@ -22,8 +22,11 @@
 
 """Application Framework image-related classes including Image, Mask and MaskedImage
 """
-from imageLib import *
+from lsst.bputils import rescope, extend
+from . import _afw_image
 import numpy
+
+rescope(_afw_image, globals(), ignore=())
 
 suffixes = {str(numpy.uint16): "U", str(numpy.int32): "I", str(numpy.float32): "F", str(numpy.float64): "D"}
 
@@ -47,3 +50,56 @@ def makeMaskedImageFromArrays(image, mask=None, variance=None):
     """
     cls = globals()["MaskedImage%s" % suffixes[str(image.dtype.type)]]
     return cls(makeImageFromArray(image), makeMaskFromArray(mask), makeImageFromArray(variance))
+
+def _injectMethods():
+
+    def _MaskedImage_set(self, x, y=None, values=None):
+        """Set the point (x, y) to a triple (value, mask, variance)"""
+
+        if values is None:
+            assert (y is None)
+            values = x
+            try:
+                self.getImage().set(values[0])
+                self.getMask().set(values[1])
+                self.getVariance().set(values[2])
+            except TypeError:
+                self.getImage().set(values)
+                self.getMask().set(0)
+                self.getVariance().set(0)
+        else:
+            try:
+                self.getImage().set(x, y, values[0])
+                if len(values) > 1:
+                    self.getMask().set(x, y, values[1])
+                if len(values) > 2:
+                   self.getVariance().set(x, y, values[2])
+            except TypeError:
+                self.getImage().set(x)
+                self.getMask().set(y)
+                self.getVariance().set(values)
+
+    def _MaskedImage_get(self, x, y):
+        """Return a triple (value, mask, variance) at the point (x, y)"""
+        return (self.getImage().get(x, y),
+                self.getMask().get(x, y),
+                self.getVariance().get(x, y))
+
+    def _MaskedImage_getArrays(self):
+        """Return a tuple (value, mask, variance) numpy arrays."""
+        return (self.getImage().getArray() if self.getImage() else None,
+                self.getMask().getArray() if self.getMask() else None,
+                self.getVariance().getArray() if self.getVariance() else None)
+
+    for cls in (MaskedImageU, MaskedImageI, MaskedImageF, MaskedImageD):
+        cls.set = _MaskedImage_set
+        cls.get = _MaskedImage_get
+        cls.getArrays = _MaskedImage_getArrays
+
+    for basename in ("Image", "DecoratedImage", "MaskedImage", "Exposure"):
+        for suffix in ("U", "I", "F", "D"):
+            cls = getattr(_afw_image, basename + suffix)
+            cls.Factory = cls
+
+_injectMethods()
+del _injectMethods

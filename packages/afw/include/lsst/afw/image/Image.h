@@ -505,7 +505,7 @@ namespace image {
 
         explicit DecoratedImage(const geom::Extent2I & dimensions=geom::Extent2I());
         explicit DecoratedImage(const geom::Box2I & bbox);
-        explicit DecoratedImage(typename Image<PixelT>::Ptr rhs);
+        explicit DecoratedImage(typename Image<PixelT>::Ptr rhs); ///< @bpdox{ignore}
         DecoratedImage(DecoratedImage const& rhs, const bool deep=false);
         explicit DecoratedImage(
             std::string const& fileName, 

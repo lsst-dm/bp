@@ -2,10 +2,22 @@
 Import('env')
 import os.path
 
-for name in ("geom", "geom/ellipses"):
+for name in ("geom", "geom/ellipses", "coord", "image", "cameraGeom", "math", "math/shapelets"):
     srcOut = []
     for srcIn in Glob("#pysrc/%s/*.cc.in" % name):
         srcOut.extend(env.BPDox(srcIn))
     env.Depends(srcOut, "#doc")
     package = os.path.join("lsst", "afw", name, "_afw_%s" % "_".join(name.split("/")))
     env.LoadableModuleIncomplete(package, srcOut, LIBS=env.getLibs("main python"))
+
+env.LoadableModuleIncomplete(
+    "#python/lsst/afw/display/_afw_display", 
+    ["#pysrc/display/_afw_display.cc", "#pysrc/display/simpleFits.cc"], 
+    LIBS=env.getLibs("main python")
+    )
+
+env.LoadableModuleIncomplete(
+    "#python/lsst/afw/display/xpa", 
+    ["#pysrc/display/xpa.cc"], 
+    LIBS=env.getLibs("main python")
+    )

@@ -1,0 +1,56 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/coord.h"
+#include <boost/python/eigen.hpp>
+#include <boost/python/slice.hpp>
+
+namespace bp = boost::python;
+
+@Customize {}
+
+@Namespace(lsst::afw::coord) {
+
+    @Class(Coord) {
+        @Customize {
+            wrapper.def(str(bp::self));
+            wrapper.def("__getitem__", &Coord::operator[]);
+        }
+    };
+
+    @Class(IcrsCoord) {};
+    @Class(Fk5Coord) {};
+    @Class(GalacticCoord) {};
+    @Class(EclipticCoord) {};
+    @Class(TopocentricCoord) {};
+
+    @Class(Observatory) {
+        @Customize {
+            wrapper.def(str(bp::self));
+        }
+    };
+
+    void declare() {
+        @Enum(CoordUnit);
+        @Enum(CoordSystem);
+        @Function(makeCoordEnum);
+        @Function(makeCoord);
+        @Function(eclipticPoleInclination);
+        @Function(dmsStringToDegrees); 
+        @Function(hmsStringToDegrees); 
+        @Function(degreesToDmsString); 
+        @Function(degreesToHmsString); 
+        PyCoord::declare();
+        PyFk5Coord::declare();
+        PyGalacticCoord::declare();
+        PyEclipticCoord::declare();
+        PyTopocentricCoord::declare();
+        PyObservatory::declare();
+    }
+
+}
+
+BOOST_PYTHON_MODULE(_afw_coord) {
+    lsst::bputils::registerConversions();
+    bp::import("lsst.afw.geom");
+    bp::import("lsst.daf.base");
+    lsst::afw::coord::declare();
+}

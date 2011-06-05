@@ -11,21 +11,18 @@ class Processor {
     typedef std::map< std::string, boost::shared_ptr<Macro> > MacroMap;
 public:
 
-    explicit Processor(bp::object const & state) : _macros(), _state(state) {}
+    explicit Processor() : _macros() {}
 
     void register_(boost::shared_ptr<Macro> const & macro) {
         _macros.insert(std::make_pair(macro->getName(), macro));
     }
 
-    std::string process(bp::str const & input) const;
+    bp::list process(bp::str const & input) const;
 
     boost::shared_ptr<Macro> findMacro(std::string const & name) const;
 
-    bp::object const & getState() const { return _state; }
-
 private:
     MacroMap _macros;
-    bp::object _state;
 };
 
 } // namespace bpdox

@@ -100,10 +100,6 @@ namespace image {
 
         bool hasDistortion() const {    return _hasDistortion;};
         lsst::daf::base::PropertyList::Ptr getFitsMetadata() const;        
-#if 0
-        //Rely on base class implementation for now.
-        lsst::afw::geom::AffineTransform linearizeAt(lsst::afw::geom::Point2D const & pix) const;
-#endif        
         
 
         //Mutators

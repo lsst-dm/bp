@@ -1,0 +1,29 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/math/Interpolate.h"
+
+#include "boost/python/return_opaque_pointer.hpp"
+
+namespace bp = boost::python;
+
+@Customize {}
+
+BOOST_PYTHON_OPAQUE_SPECIALIZED_TYPE_ID(::gsl_interp_type)
+
+@Namespace(lsst::afw::math) {
+
+    @Class(Interpolate) {};
+
+}
+
+@Namespace(lsst::afw::math, anonymous=False) {
+
+    void declareInterpolate() {
+        PyInterpolate::declare();
+        @Function(styleToGslInterpType, policies={bp::return_value_policy<bp::return_opaque_pointer>()});
+        @Function(stringToGslInterpType, policies={bp::return_value_policy<bp::return_opaque_pointer>()});
+        @Function(stringToInterpStyle);
+        @Function(lookupMaxInterpStyle);
+        @Function(lookupMinInterpPoints);
+    }
+
+}

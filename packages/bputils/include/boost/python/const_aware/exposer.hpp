@@ -12,6 +12,7 @@
 #include <boost/python/const_aware/const_shared_ptr_to_python.hpp>
 #include <boost/python/const_aware/shared_ptr_from_proxy.hpp>
 #include <boost/python/const_aware/data_members.hpp>
+#include <boost/python/const_aware/operators.hpp>
 #include <boost/function_types/parameter_types.hpp>
 #include <boost/mpl/front.hpp>
 #include <boost/type_traits/is_const.hpp>
@@ -99,6 +100,15 @@ public: // member functions
         return *this;
     }
 
+    // Operators
+    template <detail::operator_id id, typename L, typename R>
+    self & def(detail::operator_<id,L,R> const & visitor) {
+        m_class.def(visitor);
+        if (!operator_info<id,L,R>::is_inplace())
+            this->copy_method_to_proxy(operator_info<id,L,R>::generator::name());
+        return *this;
+    }
+
     // Const-aware static data members
     template <typename T>
     self & def(static_data_member_visitor<T> const & visitor) {
@@ -165,42 +175,42 @@ public: // data members
     template <typename D>
     self & def_readonly(char const* name, D const & d, char const* doc=0) {
         m_class.def_readonly(name, d, doc);
-        m_proxy.use_property(name, m_class.attr(name));
+        m_proxy.use_property(name, m_class.attr("__dict__")[name]);
         return *this;
     }
 
     template <typename D>
     self & def_readwrite(char const* name, D const & d, char const* doc=0) {
         m_class.def_readwrite(name, d, doc);
-        m_proxy.use_property(name, m_class.attr(name));
+        m_proxy.use_property(name, m_class.attr("__dict__")[name]);
         return *this;
     }
 
     template <typename D>
     self & def_readonly(char const* name, D & d, char const* doc=0) {
         m_class.def_readonly(name, d, doc);
-        m_proxy.use_property(name, m_class.attr(name));
+        m_proxy.use_property(name, m_class.attr("__dict__")[name]);
         return *this;
     }
 
     template <typename D>
     self & def_readwrite(char const* name, D & d, char const* doc=0) {
         m_class.def_readwrite(name, d, doc);
-        m_proxy.use_property(name, m_class.attr(name));
+        m_proxy.use_property(name, m_class.attr("__dict__")[name]);
         return *this;
     }
 
     template <class Get>
     self & add_property(char const* name, Get fget, char const* docstr = 0) {
         m_class.add_property(name, fget, docstr);
-        m_proxy.use_property(name, m_class.attr(name));
+        m_proxy.use_property(name, m_class.attr("__dict__")[name]);
         return *this;
     }
 
     template <class Get, class Set>
     self & add_property(char const* name, Get fget, Set fset, char const* docstr = 0) {
         m_class.add_property(name, fget, fset, docstr);
-        m_proxy.use_property(name, m_class.attr(name));
+        m_proxy.use_property(name, m_class.attr("__dict__")[name]);
         return *this;
     }
 
@@ -228,7 +238,7 @@ public: // data members
     template <class U>
     self & setattr(char const* name, U const& x) {
         m_class.setattr(name, x);
-        m_proxy.setattr(name, m_class.attr(name));
+        m_proxy.setattr(name, m_class.attr("__dict__")[name]);
         return *this;
     }
 
@@ -238,7 +248,6 @@ private:
     // These two overloads discriminate between def() as applied to a
     // generic visitor and everything else.
     //
-    // @group def_impl {
     template <class T, class Helper, class LeafVisitor, class Visitor>
     inline void def_impl(
         T*

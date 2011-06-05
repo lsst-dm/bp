@@ -129,6 +129,6 @@ data_member_visitor<C,T> data_member(char const * name, T C::*ptr, char const * 
     return data_member_visitor<C,T>(name, ptr, doc);
 }
 
-}}} // namespace boost::python
+}}} // namespace boost::python::const_aware
 
 #endif // !BOOST_PYTHON_CONST_AWARE_DATA_MEMBERS_HPP

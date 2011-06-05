@@ -23,7 +23,7 @@ import sys
 import lsst.pex.logging as pexLog
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
-import mathLib
+from . import _afw_math
 
 __all__ = ["Warper"]
 
@@ -58,7 +58,7 @@ class Warper(object):
         - interpLength: interpLength argument to lsst.afw.warpExposure
         - cacheSize: size of computeCache
         """
-        self._warpingKernel = mathLib.makeWarpingKernel(warpingKernelName)
+        self._warpingKernel = _afw_math.makeWarpingKernel(warpingKernelName)
         self._warpingKernel.computeCache(cacheSize)
         self._interpLength = int(interpLength)
 
@@ -134,6 +134,6 @@ class Warper(object):
             if maxBBox:
                 destBBox.clip(maxBBox)
         warpedImage = srcImage.Factory(destBBox)
-        mathLib.warpImage(warpedImage, destWcs, srcImage, srcWcs, self._warpingKernel, self._interpLength)
+        _afw_math.warpImage(warpedImage, destWcs, srcImage, srcWcs, self._warpingKernel, self._interpLength)
         return warpedImage
 

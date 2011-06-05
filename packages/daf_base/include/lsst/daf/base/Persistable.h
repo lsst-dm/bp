@@ -59,7 +59,9 @@ class Persistable;
 
 } // namespace lsst::daf::base
 
+#ifndef DOXYGEN
 namespace persistence {
+
 // Template global function used to connect with boost::serialization.
 // Definition is in daf/persistence/FormatterImpl.h, but is not needed by
 // Persistable clients, only Formatter subclasses.
@@ -68,6 +70,7 @@ template <class Form, class Archive>
                            lsst::daf::base::Persistable* persistable);
 
 } // namespace lsst::daf::persistence
+#endif // !DOXYGEN
 
 namespace base {
 

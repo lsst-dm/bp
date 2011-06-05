@@ -53,10 +53,11 @@
 namespace lsst {
 namespace daf {
 
+#ifndef DOXYGEN
 namespace persistence {
     class PropertyListFormatter;
 } // namespace lsst::daf::persistence
-
+#endif // !DOXYGEN
 
 namespace base {
 

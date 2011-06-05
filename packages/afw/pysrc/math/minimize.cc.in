@@ -1,0 +1,53 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/math/minimize.h"
+#include "boost/python/to_python/implicit.hpp"
+
+namespace bp = boost::python;
+
+@Namespace(lsst::afw::math) {
+
+    struct PyFitResults {
+        bool isValid;
+        double chiSq;
+        bp::list parameterList;
+        bp::list parameterErrorList;
+
+        PyFitResults(FitResults const & other) : isValid(other.isValid), chiSq(other.chiSq) {
+            for (
+                std::vector<double>::const_iterator i = other.parameterList.begin(); 
+                i != other.parameterList.end();
+                ++i
+            ) {
+                parameterList.append(*i);
+            }
+            for (
+                std::vector< std::pair<double,double> >::const_iterator i = other.parameterErrorList.begin(); 
+                i != other.parameterErrorList.end();
+                ++i
+            ) {
+                parameterErrorList.append(*i);
+            }
+        }
+        
+    };
+
+    template <typename ReturnT>
+    static void declareMinimizeT() {
+        @Function(minimize, tparams={<ReturnT>});
+    }
+
+}
+
+@Namespace(lsst::afw::math, anonymous=False) {
+    void declareMinimize() {
+        bp::class_<PyFitResults>("FitResults", bp::no_init)
+            .def_readwrite("isValid", &PyFitResults::isValid)
+            .def_readwrite("chiSq", &PyFitResults::chiSq)
+            .def_readwrite("parameterList", &PyFitResults::parameterList)
+            .def_readwrite("parameterErrorList", &PyFitResults::parameterErrorList)
+            ;
+        bp::implicit_to_python<FitResults,PyFitResults>();
+        declareMinimizeT<float>();
+        declareMinimizeT<double>();
+    }
+}

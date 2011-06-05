@@ -1,0 +1,43 @@
+#include "lsst/bputils.h"
+#include "boost/python/numpy.hpp"
+
+namespace bp = boost::python;
+
+@Customize {}
+
+@Namespace(lsst::afw::math, anonymous=False) {
+    void declareFunction();
+    void declareKernel();
+    void declareStatistics();
+    void declareMinimize();
+    void declareInterpolate();
+    void declareBackground();
+    void declareWarpExposure();
+    void declareSpatialCell();
+    void declareRandom();
+    void declareStack();
+}
+
+@Namespace(lsst::afw::math) {
+
+    void declare() {
+        declareFunction();
+        declareKernel();
+        declareStatistics();
+        declareMinimize();
+        declareInterpolate();
+        declareBackground();
+        declareWarpExposure();
+        declareSpatialCell();
+        declareRandom();
+        declareStack();
+    }
+
+}
+
+BOOST_PYTHON_MODULE(_afw_math) {
+    lsst::bputils::registerConversions();
+    bp::numpy::initialize();
+    bp::import("lsst.afw.image");
+    lsst::afw::math::declare();
+}

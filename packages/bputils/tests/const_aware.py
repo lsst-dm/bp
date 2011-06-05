@@ -49,6 +49,12 @@ class TestConstAware(unittest.TestCase):
             x.value_ro = v
         self.assertRaises(AttributeError, set_value_ro, 1)
         self.checkStaticMembers(x)
+        self.assertEqual((x + x).value_prop, x.value_prop + x.value_prop)
+        self.assertEqual((x + 2).value_prop, x.value_prop + 2)
+        self.assertEqual((2 + x).value_prop, 2 + x.value_prop)
+        x.value_prop += 2
+        self.assertEqual(x.value_prop, 2)
+        x.value_prop -= 2
 
     def checkConst(self, x):
         self.assert_(hasattr(x, "freeFunctionC"))
@@ -75,6 +81,14 @@ class TestConstAware(unittest.TestCase):
         self.assertRaises(AttributeError, set_value_rw, 1)
         self.assertRaises(AttributeError, set_value_ro, 1)
         self.checkStaticMembers(x)
+        self.assertEqual((x + x).value_prop, x.value_prop + x.value_prop)
+        self.assertEqual((x + 2).value_prop, x.value_prop + 2)
+        self.assertEqual((2 + x).value_prop, 2 + x.value_prop)
+        y = x
+        y += 2
+        self.assertNotEqual(x.value_prop, y.value_prop)
+        y += const_aware_mod.Example(-2)
+        self.assertEqual(y.value_prop, x.value_prop)
 
     def testStaticMembers(self):
         self.checkStaticMembers(const_aware_mod.Example)
@@ -157,6 +171,7 @@ class TestConstAware(unittest.TestCase):
         self.assertEqual(self.non_const_owner.value_member, 4.0)
 
     def testConstruction(self):
+        self.assertEqual(self.owner.Ex, const_aware_mod.Example)
         original = self.owner.by_value()
         proxy = const_aware_mod.Example.__const_proxy__(original)
         self.assertEqual(original.address, original.address)

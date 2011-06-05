@@ -23,6 +23,38 @@ struct as_const : Base {
     }
 };
 
-}} // namespace boost::python
+namespace const_aware {
+
+/**
+ *  An analogue of return_internal_reference that returns const references and pointers
+ *  using const proxies.
+ */
+template <long unsigned int owner_arg=1, typename Base = default_call_policies>
+struct return_internal : public return_internal_reference<owner_arg, Base> {
+private:
+
+    template <typename R>
+    struct converter_impl : public reference_existing_object::apply<R>::type {
+        PyObject * operator()(R r) const {
+            PyObject * m = this->reference_existing_object::apply<R>::type::operator()(r);
+            if (is_const<typename remove_pointer<typename remove_reference<R>::type>::type>::value) {
+                return construct_proxy_class(m);
+            } else {
+                return m;
+            }
+        }
+    };
+
+public:    
+
+    struct result_converter {
+        template <typename R> struct apply {
+            typedef converter_impl<R> type;
+        };
+    };
+
+};
+
+}}} // namespace boost::python::const_aware
 
 #endif // !BOOST_PYTHON_CONST_AWARE_AS_CONST_HPP

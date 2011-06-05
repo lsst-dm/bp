@@ -1,0 +1,36 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/math/Random.h"
+#include "lsst/afw/image/Image.h"
+
+namespace bp = boost::python;
+
+@Namespace(lsst::afw::math) {
+
+    @Class(Random) {
+        static Random::Algorithm const MT19937 = Random::MT19937;
+        @Customize {
+            wrapper.@Member(getAlgorithmNames, policies={bp::return_value_policy<bp::copy_to_tuple>()});
+        }
+    };
+    Random::Algorithm const PyRandom::MT19937;
+
+    template <typename T>
+    void declareRandomTemplates() {
+        typedef image::Image<T> ImageT;
+        @Function(randomUniformImage, tparams={<ImageT>});
+        @Function(randomUniformPosImage, tparams={<ImageT>});
+        @Function(randomUniformIntImage, tparams={<ImageT>});
+        @Function(randomFlatImage, tparams={<ImageT>});
+        @Function(randomGaussianImage, tparams={<ImageT>});
+        @Function(randomChisqImage, tparams={<ImageT>});
+        @Function(randomPoissonImage, tparams={<ImageT>});
+    }
+
+}
+
+@Namespace(lsst::afw::math, anonymous=False) {
+    void declareRandom() {
+        declareRandomTemplates<float>();
+        declareRandomTemplates<double>();
+    }
+}

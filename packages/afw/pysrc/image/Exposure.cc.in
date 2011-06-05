@@ -1,0 +1,65 @@
+#include "lsst/bputils.h"
+#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/afw/image/Exposure.h"
+#include "lsst/afw/image/Calib.h"
+#include "lsst/afw/formatters/ExposureFormatter.h"
+#include "lsst/afw/detection/Psf.h"
+
+#include "boost/python/ndarray.hpp"
+
+namespace bp = boost::python;
+
+@Namespace(lsst::afw::image) {
+
+    template <typename ImageT, typename MaskT, typename VarianceT>
+    @TemplateClass(
+        Exposure, tparams={<ImageT,MaskT,VarianceT>}
+    ) {
+        template <typename OtherT> static Exposure<OtherT> convert(
+            Exposure<ImageT,MaskT,VarianceT> const & self
+        ) {
+            return Exposure<OtherT,MaskT,VarianceT>(self, true);
+        }
+        @Customize {
+            wrapper.def("convertU", &convert<boost::uint16_t>);
+            wrapper.def("convertI", &convert<int>);
+            wrapper.def("convertF", &convert<float>);
+            wrapper.def("convertD", &convert<double>);
+            wrapper
+                .@Member(
+                    Exposure[wh], args={(bp::arg("width"), bp::arg("height"), bp::arg("wcs")=bp::object())}
+                )
+                .@Member(
+                    Exposure[dim], args={(bp::arg("dimensions"), bp::arg("wcs")=bp::object())}
+                )
+                .@Member(
+                    Exposure[bbox], args={(bp::arg("bbox"), bp::arg("wcs")=bp::object())}
+                )
+                .@Member(
+                    Exposure[mi], args={(bp::arg("maskedImage"), bp::arg("wcs")=bp::object())}
+                )
+                ;
+            bputils::BoostPickleInterface< Exposure<ImageT,MaskT,VarianceT> >::apply(wrapper);
+        }
+    };
+
+    template <typename PixelT>
+    void instantiateExposure(std::string const & t) {
+        PyExposure< PixelT, MaskPixel, VariancePixel >::declare(("Exposure" + t).c_str());
+        bp::def(
+            "makeExposure", &makeExposure< MaskedImage<PixelT,MaskPixel,VariancePixel> >,
+            (bp::arg("mimage"), bp::arg("wcs")=bp::object()),
+            @Doc(makeExposure)
+        );
+    }
+
+}
+
+@Namespace(lsst::afw::image, anonymous=False) {
+    void declareExposure() {
+        instantiateExposure<boost::uint16_t>("U");
+        instantiateExposure<int>("I");
+        instantiateExposure<float>("F");
+        instantiateExposure<double>("D");
+    }
+}

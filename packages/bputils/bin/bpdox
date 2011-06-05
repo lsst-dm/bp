@@ -14,99 +14,19 @@ variable BPDOX_PATH can be set to a colon-separated list of paths
 which will be searched for subdirectories matching the paths given
 on command line.
 
-All macros are delimited by %% at begin and end, and cannot span
-multiple lines.  When in doubt about what a macro does, just try it
-and look at the generated source.  These macros are NOT intended to
-provide a complete solution for generating Boost.Python wrapper code -
-they simply provide shortcuts for the most common and tedious aspects
-of Boost.Python.
-
-SUPPORTED MACROS
-
-%%scope(NAME)%%
-   Set a namespace or class scope for name lookup and resolution.
-   Typically, a scope macro call is paired with the opening of a
-   namespace scope:
-
-   namespace a { namespace b {
-   %%scope(a::b)%%
-   // do stuff in a::b here
-   }}
-
-%%doc(NAME)%% 
-   Construct a Python docstring (including quotes) from the Doxygen
-   for the object.  NAME is a C++ name, either fully qualified or
-   qualified to match the most recent scope macro call, but with no
-   template arguments.  The docstring may span multiple lines, with
-   each line quoted individually and separated only by whitespace so
-   they will be joined by the compiler.
-
-%%in_class(NAME)%%
-   Set the active class for the auto_method and auto_init macros.
-   Note that this does not set th scope.  If NAME includes template
-   parameters, these will be used to qualify the class name in
-   subsequent auto_method and auto_init calls, allowing templated
-   wrapper code to wrap a particular template instantiation of the
-   class.
-
-%%auto_class< NAME > VARIABLE(INIT)%%
-%%auto_class< NAME, noncopyable > VARIABLE(INIT)%%
-%%auto_class< NAME >(INIT)%%
-%%auto_class< NAME, noncopyable >(INIT)%%
-   Generate a boost::python::class_ declaration for class NAME with
-   Python name, docstring, and bases determined automatically.
-   VARIABLE is the name of the new C++ variable created by this
-   declaration and used to wrap members of the class.  The optional
-   INIT argument is a boost::python::init call that will be used to
-   create a constructor for the class; if no INIT is given,
-   boost::python::no_init will be used.  The auto_class macro includes
-   an implicit call to in_class to set the active class.
-
-%%auto_method(NAME[INDEX])%%
-%%auto_method(NAME[INDEX], POLICIES)%%
-   Generate one or more chained boost::python::class_::def calls for
-   the member function NAME with Python name, keyword arguments, and
-   docstring determined automatically.  An active class must have been
-   set by a prior in_class or auto_class call.  If the member function
-   is overloaded, the INDEX arguments allows the user to select which
-   overload(s) to wrap using single-index [n] or slice [i:j] notation,
-   with indices corresponding to order of declaration in the header
-   file.  An optional POLICIES string can be provided to set custom
-   Boost.Python call policies for the member function.  If more than
-   one def(...) call is generated, they will be chained.
-
-%%auto_init[INDEX]%%
-  Generate one or more boost::python::class_::def(init(...)) calls for
-  the the constructors of the active class.  As with auto_method,
-  the INDEX argument can be used to specify which constructors to
-  generate wrappers for.
-
-%%auto_enum(NAME)%%
-%%auto_enum(NAME, TSCOPE)%%
-  Generate a boost::python::enum_ declaration including .value calls
-  for each enum value.  NAME is the name of the enum in the current
-  scope.  TSCOPE is an optional and possibly templated scope that
-  encloses the enum values, allowing auto_enum to work even when the
-  enum is defined inside a templated class; it should be unnecessary
-  unless that is the case.
-
 """
-
 import sys
 import os
 try:
-    import lsst.bputils.bpdox
+    import bpdox
 except ImportError:
-    bin_paths = __file__.split("/")
-    mod_paths = bin_paths[:-2] + ["python"]
-    sys.path.append("/".join(mod_paths))
-    import lsst.bputils.bpdox
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../python")))
+    import bpdox
+
 import logging
 
-verbose = False
-
 if __name__ == "__main__":
-    if verbose:
+    if bpdox.settings.verbose:
         logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
     else:
         logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.WARNING)
@@ -114,18 +34,16 @@ if __name__ == "__main__":
         print __doc__
         sys.exit(0)
     try:
-        lsst.bputils.bpdox.main(*sys.argv[1:])
+        bpdox.processor.main(*sys.argv[1:])
+    except bpdox.processor.MacroException, err:
+        sys.stderr.write(err.format())
+        sys.exit(1)
     except Exception, err:
-        if verbose:
-            if not isinstance(err.args[0], str):
-                message = err.args[0][1] + err.args[0][0] + "\n";
-            else:
-                import traceback
-                message = traceback.format_exc()
+        print type(err)
+        if bpdox.settings.verbose:
+            import traceback
+            message = traceback.format_exc()
         else:
-            if not isinstance(err.args[0], str):
-                message = err.args[0][0] + "\n";
-            else:
-                message = err.args[0] + "\n"
+            message = err.args[0] + "\n"
         sys.stderr.write(message)
         sys.exit(1)

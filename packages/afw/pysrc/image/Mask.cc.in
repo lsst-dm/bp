@@ -1,0 +1,60 @@
+#include "lsst/bputils.h"
+#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/afw/image/Mask.h"
+#include "lsst/afw/formatters/MaskFormatter.h"
+
+#include "boost/python/ndarray.hpp"
+
+#include "indexing_suite/map.hpp"
+
+namespace bp = boost::python;
+
+@Namespace(lsst::afw::image) {
+
+    template <typename MaskPixelT>
+    @TemplateClass(
+        Mask, tparams={<MaskPixelT>}, exclude_list=[getMaskPlaneDict, swap], 
+        bases={ImageBase<MaskPixelT>}
+    ) {
+        static void setAll(Mask<MaskPixelT> & self, MaskPixelT value) { self = value; }
+        static void setPixel(Mask<MaskPixelT> & self, int x, int y, MaskPixelT value) {
+            self(x, y, CheckIndices(true)) = value;
+        }
+        static MaskPixelT getPixel(Mask<MaskPixelT> const & self, int x, int y) {
+            return self(x, y, CheckIndices(true));
+        }
+        static MaskPixelT getPixelPlane(Mask<MaskPixelT> const & self, int x, int y, int plane) {
+            return self(x, y, plane, CheckIndices(true));
+        }
+        static Image<MaskPixelT> convert(Mask<MaskPixelT> const & self) {
+            return Image<MaskPixelT>(ndarray::copy(self.getArray()), false, self.getXY0());
+        }
+        @Customize {
+            wrapper.def("set", &setAll);
+            wrapper.def("set", &setPixel);
+            wrapper.def("get", &getPixel);
+            wrapper.def("get", &getPixelPlane);
+            wrapper.def(bp::self |= bp::self);
+            wrapper.def(bp::self |= bp::other<MaskPixelT>());
+            wrapper.def(bp::self &= bp::self);
+            wrapper.def(bp::self &= bp::other<MaskPixelT>());
+            wrapper.def(bp::self ^= bp::self);
+            wrapper.def(bp::self ^= bp::other<MaskPixelT>());
+            wrapper.@Member(
+                getMaskPlaneDict, policies={bp::return_value_policy< bp::copy_const_reference >()}
+            );
+            wrapper.def("convertU", &convert);
+            bputils::BoostPickleInterface< Mask<MaskPixelT> >::apply(wrapper);
+        }
+    };
+
+}
+
+@Namespace(lsst::afw::image, anonymous=False) {
+    void declareMask() {
+        bp::class_< std::map<std::string, int> >("MaskPlaneDict")
+            .def(bp::indexing::map_suite< std::map<std::string,int> >())
+            ;
+        PyMask< MaskPixel >::declare("MaskU");
+    }
+}

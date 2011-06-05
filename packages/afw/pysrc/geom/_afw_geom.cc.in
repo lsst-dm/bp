@@ -6,436 +6,266 @@
 
 namespace bp = boost::python;
 
-namespace lsst { namespace afw { namespace geom { %%scope(lsst::afw::geom)%%
+@Customize {}
 
-namespace {
+@Namespace(lsst::afw::geom) {
 
-template <typename T, int N, typename U>
-static U Py_getitem(T const & self, int index) {
-    if (index < 0 || index >= N) {
-        PyErr_SetString(PyExc_IndexError, "Index out of range.");
-        boost::python::throw_error_already_set();
-    }
-    return self[index];
-}
-
-template <typename T, int N, typename U>
-static void Py_setitem(T & self, int index, U value) {
-    if (index < 0 || index >= N) {
-        PyErr_SetString(PyExc_IndexError, "Index out of range.");
-        boost::python::throw_error_already_set();
-    }
-    self[index] = value;
-}
-
-template <typename T, int N> static int Py_len(T const & self) { return N; }
-
-// CoordinateBase isn't wrapped as a Python class - we just inject its members into derived classes.
-struct PyCoordinateBase {
-
-    template <typename Derived, typename Wrapper>
-    static void declare(Wrapper & wrapper) {
-        wrapper
-            .def("__getitem__", &Py_getitem< Derived, Derived::dimensions, typename Derived::Element >)
-            .def("__setitem__", &Py_setitem< Derived, Derived::dimensions, typename Derived::Element >)
-            .def("__len__", &Py_len< Derived, Derived::dimensions >)
-            ;
-        wrapper.main_class().def(str(bp::self));
-        wrapper.copy_method_to_proxy("__str__");
-        declareAccessors<Derived>(wrapper, (boost::mpl::int_<Derived::dimensions>*)0);
+    template <typename T, int N, typename U>
+        static U Py_getitem(T const & self, int index) {
+        if (index < 0 || index >= N) {
+            PyErr_SetString(PyExc_IndexError, "Index out of range.");
+            boost::python::throw_error_already_set();
+        }
+        return self[index];
     }
 
-    template <typename Derived, typename Wrapper>
-    static void declareAccessors(Wrapper & wrapper, boost::mpl::int_<2> *) {
-        wrapper
-            .def("getX", &Derived::getX)
-            .def("getY", &Derived::getY)
-            .def("setX", &Derived::setX)
-            .def("setY", &Derived::setY)
-            .add_property("x", &Derived::getX, &Derived::setX)
-            .add_property("y", &Derived::getY, &Derived::setY)
-            ;
+    template <typename T, int N, typename U>
+        static void Py_setitem(T & self, int index, U value) {
+        if (index < 0 || index >= N) {
+            PyErr_SetString(PyExc_IndexError, "Index out of range.");
+            boost::python::throw_error_already_set();
+        }
+        self[index] = value;
     }
 
-    template <typename Derived, typename Wrapper>
-    static void declareAccessors(Wrapper & wrapper, boost::mpl::int_<3> *) {
-        declareAccessors<Derived>(wrapper, (boost::mpl::int_<2>*)0);
-        wrapper
-            .def("getZ", &Derived::getZ)
-            .def("setZ", &Derived::setZ)
-            .add_property("z", &Derived::getZ, &Derived::setZ)
-            ;
-    }
+    template <typename T, int N> static int Py_len(T const & self) { return N; }
 
-    template <typename T, typename Wrapper>
-    static void declareConstructor(Wrapper & wrapper, boost::mpl::int_<2> *) {
-        wrapper.def(bp::init<T,T>((bp::arg("x"), bp::arg("y"))));
-    }
+    // CoordinateBase isn't wrapped as a Python class - we just inject its members into derived classes.
+    struct PyCoordinateBase {
 
-    template <typename T, typename Wrapper>
-    static void declareConstructor(Wrapper & wrapper, boost::mpl::int_<3> *) {
-        wrapper.def(bp::init<T,T,T>((bp::arg("x"), bp::arg("y"), bp::arg("z"))));
-    }
+        template <typename Derived, typename Wrapper>
+        static void declare(Wrapper & wrapper) {
+            wrapper
+                .def("__getitem__", &Py_getitem< Derived, Derived::dimensions, typename Derived::Element >)
+                .def("__setitem__", &Py_setitem< Derived, Derived::dimensions, typename Derived::Element >)
+                .def("__len__", &Py_len< Derived, Derived::dimensions >)
+                ;
+            wrapper.def(str(bp::self));
+            declareAccessors<Derived>(wrapper, (boost::mpl::int_<Derived::dimensions>*)0);
+        }
 
-};
+        template <typename Derived, typename Wrapper>
+        static void declareAccessors(Wrapper & wrapper, boost::mpl::int_<2> *) {
+            wrapper
+                .def("getX", &Derived::getX)
+                .def("getY", &Derived::getY)
+                .def("setX", &Derived::setX)
+                .def("setY", &Derived::setY)
+                .add_property("x", &Derived::getX, &Derived::setX)
+                .add_property("y", &Derived::getY, &Derived::setY)
+                ;
+        }
 
-struct PyCoordinateExpr {
+        template <typename Derived, typename Wrapper>
+        static void declareAccessors(Wrapper & wrapper, boost::mpl::int_<3> *) {
+            declareAccessors<Derived>(wrapper, (boost::mpl::int_<2>*)0);
+            wrapper
+                .def("getZ", &Derived::getZ)
+                .def("setZ", &Derived::setZ)
+                .add_property("z", &Derived::getZ, &Derived::setZ)
+                ;
+        }
+
+        template <typename T, typename Wrapper>
+        static void declareConstructor(Wrapper & wrapper, boost::mpl::int_<2> *) {
+            wrapper.def(bp::init<T,T>((bp::arg("x"), bp::arg("y"))));
+        }
+
+        template <typename T, typename Wrapper>
+        static void declareConstructor(Wrapper & wrapper, boost::mpl::int_<3> *) {
+            wrapper.def(bp::init<T,T,T>((bp::arg("x"), bp::arg("y"), bp::arg("z"))));
+        }
+
+    };
 
     template <int N>
-    static void declare(char const * name) {
-        auto wrapper = bp::make_const_aware(
-            bp::class_< CoordinateExpr<N> >(
-                name, bp::init<bool>(bp::arg("val")=true)
-            )
-        );
-        wrapper
-            .enable_shared_ptr()
-            .def("and_", &CoordinateExpr<N>::and_)
-            .def("or_", &CoordinateExpr<N>::or_)
-            .def("not_", &CoordinateExpr<N>::not_)
-            ;
-        PyCoordinateBase::declare< CoordinateExpr<N> >(wrapper);
-    }
-
-};
-
-struct PyExtent {
-
-    template <typename T, int N, typename Wrapper>
-    static void declareBase(Wrapper & wrapper) {
-        %%in_class(ExtentBase<T,N>)%%; // fool bpdox into thinking we're wrapping ExtentBase
-        wrapper
-            .%%auto_members(computeNorm, computeSquaredNorm, eq, ne, lt, le, gt, ge)%%
-            ;
-        wrapper.main_class()
-            .def(bp::self + bp::other< Point<T,N> >())
-            .def(bp::self + bp::self)
-            .def(bp::self - bp::self)
-            .def(bp::self += bp::self)
-            .def(bp::self -= bp::self)
-            .def(+bp::self)
-            .def(-bp::self)
-            .def(bp::self * bp::other<T>())
-            .def(bp::self *= bp::other<T>())
-            .def(bp::self / bp::other<T>())
-            .def(bp::self /= bp::other<T>())
-            .def(bp::self == bp::self)
-            .def(bp::self != bp::self)
-            ;
-        wrapper
-            .copy_method_to_proxy("__add__")
-            .copy_method_to_proxy("__sub__")
-            .copy_method_to_proxy("__iadd__")
-            .copy_method_to_proxy("__isub__")
-            .copy_method_to_proxy("__pos__")
-            .copy_method_to_proxy("__neg__")
-            .copy_method_to_proxy("__mul__")
-            .copy_method_to_proxy("__div__")
-            .copy_method_to_proxy("__imul__")
-            .copy_method_to_proxy("__idiv__")
-            .copy_method_to_proxy("__eq__")
-            .copy_method_to_proxy("__ne__")
-            ;
-    }
+    @TemplateClass(CoordinateExpr, tparams={<N>}, bases={}) {
+        @Customize {
+            PyCoordinateBase::declare< CoordinateExpr<N> >(wrapper);
+        }
+    };
+    
+    template <typename T, int N>
+    @TemplateClass(Extent, tparams={<T,N>}, bases={}, exclude_list=[Extent, EigenVector]) {
+        @Customize {
+            wrapper
+                .def(
+                    bp::init<T>(
+                        (bp::arg("val")=static_cast<T>(0)),
+                        @Doc(Extent[scalar])
+                    )
+                )
+                .def(bp::init< Point<T,N> const & >(bp::arg("other")))
+                .def(bp::self + bp::other< Point<T,N> >())
+                .def(bp::self + bp::self)
+                .def(bp::self - bp::self)
+                .def(bp::self += bp::self)
+                .def(bp::self -= bp::self)
+                .def(+bp::self)
+                .def(-bp::self)
+                .def(bp::self * bp::other<T>())
+                .def(bp::self *= bp::other<T>())
+                .def(bp::self / bp::other<T>())
+                .def(bp::self /= bp::other<T>())
+                .def(bp::self == bp::self)
+                .def(bp::self != bp::self)
+                ;
+            PyCoordinateBase::declare< Extent<T,N> >(wrapper);
+            PyCoordinateBase::declareConstructor<T>(wrapper, (boost::mpl::int_<N>*)0);
+        }
+    };
 
     template <typename T, int N>
-    static void declare(char const * name) {
-        auto wrapper = bp::make_const_aware(
-            bp::class_< Extent<T,N> >(
-                name, 
-                %%doc(Extent)%%,
-                bp::init<T>(
-                    (bp::arg("val")=static_cast<T>(0)), 
-                    %%doc(Extent::Extent[scalar])%%
+    @TemplateClass(Point, tparams={<T,N>}, bases={}, exclude_list=[Point, EigenVector]) {
+        @Customize {
+            wrapper
+                .def(
+                    bp::init<T>(
+                        (bp::arg("val")=static_cast<T>(0)),
+                        @Doc(Point[scalar])
+                    )
                 )
-            )
-        );
-        %%in_class(Extent<T,N>)%%;
-        wrapper
-            .enable_shared_ptr()
-            .def(bp::init< Point<T,N> const & >(bp::arg("other")))
-            ;
-        PyCoordinateBase::declare< Extent<T,N> >(wrapper);
-        PyCoordinateBase::declareConstructor<T>(wrapper, (boost::mpl::int_<N>*)0);
-        declareBase<T,N>(wrapper);
-    }
+                .def(bp::init< Extent<T,N> const & >(bp::arg("other")))
+                .def(bp::init< Point<int,N> const & >(bp::arg("other")))
+                .def(bp::init< Point<double,N> const & >(bp::arg("other")))
+                .def(bp::self - bp::self)
+                .def(bp::self + bp::other< Extent<T,N> >())
+                .def(bp::self - bp::other< Extent<T,N> >())
+                .def(bp::self += bp::other< Extent<T,N> >())
+                .def(bp::self -= bp::other< Extent<T,N> >())
+                .def(bp::self == bp::self)
+                .def(bp::self != bp::self)
+                ;
+            PyCoordinateBase::declare< Point<T,N> >(wrapper);
+            PyCoordinateBase::declareConstructor<T>(wrapper, (boost::mpl::int_<N>*)0);
+        }
+    };
 
-};
+    @Class(LinearTransform) {
+        @Customize {
+            wrapper
+                .def(bp::self * bp::self)
+                .def(str(bp::self))
+                .@Member(getMatrix, policies={bp::return_internal_matrix<>()})
+                .@Member(getParameterVector, policies={bp::squeeze_matrix<>()})
+                .def("__getitem__", &Py_getitem<LinearTransform,4,double>)
+                .def("__setitem__", &Py_setitem<LinearTransform,4,double>)
+                .def("__len__", &Py_len<LinearTransform,4>)
+            ;
+        }
+    };
 
-struct PyPoint {
+    @Class(AffineTransform) {
+        @Customize {
+            wrapper
+                .def(bp::self * bp::self)
+                .def(str(bp::self))
+                .@Member(getParameterVector, policies={bp::squeeze_matrix<>()})
+                .@Member(getTranslation, policies={bp::const_aware::return_internal<>()})
+                .@Member(getLinear, policies={bp::const_aware::return_internal<>()})
+                .def("__getitem__", &Py_getitem<AffineTransform,4,double>)
+                .def("__setitem__", &Py_setitem<AffineTransform,4,double>)
+                .def("__len__", &Py_len<AffineTransform,4>)
+                ;
+        }
+    };
 
-    template <typename T, int N, typename Wrapper>
-    static void declareBase(Wrapper & wrapper) {
-        %%in_class(PointBase<T,N>)%%; // fool bpdox into thinking we're wrapping PointBase
-        wrapper
-            .%%auto_members(shift, eq, ne, lt, le, gt, ge)%%
-            ;
-        wrapper.main_class()
-            .def(bp::self - bp::self)
-            .def(bp::self + bp::other< Extent<T,N> >())
-            .def(bp::self - bp::other< Extent<T,N> >())
-            .def(bp::self += bp::other< Extent<T,N> >())
-            .def(bp::self -= bp::other< Extent<T,N> >())
-            .def(bp::self == bp::self)
-            .def(bp::self != bp::self)
-            ;
-        wrapper
-            .copy_method_to_proxy("__add__")
-            .copy_method_to_proxy("__sub__")
-            .copy_method_to_proxy("__iadd__")
-            .copy_method_to_proxy("__isub__")
-            .copy_method_to_proxy("__eq__")
-            .copy_method_to_proxy("__ne__")
-            ;
-    }
+    @Class(Box2I) {
+        static Box2I::EdgeHandlingEnum const EXPAND = Box2I::EXPAND;
+        static bp::object getSlices(Box2I const & self) {
+            return bp::make_tuple(
+                bp::slice(self.getBeginY(), self.getEndY()), 
+                bp::slice(self.getBeginX(), self.getEndX())
+            );
+        }
+        @Customize {
+            wrapper
+                .def(bp::self == bp::self)
+                .def(bp::self != bp::self)
+                .def(str(bp::self))
+                .@MemberList(
+                    [getMin, getBegin, getDimensions], 
+                    policies={bp::return_value_policy< bp::copy_const_reference >()}
+                )
+                .@Member(getSlices, pointer={getSlices})
+                ;
+        }
+    };
+    Box2I::EdgeHandlingEnum const PyBox2I::EXPAND;
+
+    @Class(Box2D) {
+        @Customize {
+            wrapper
+                .def(bp::self == bp::self)
+                .def(bp::self != bp::self)
+                .def(str(bp::self))
+                .@MemberList(
+                    [getMin, getMax], policies={bp::return_value_policy< bp::copy_const_reference >()}
+                )
+                ;
+        }
+    };
+    
+    struct PyAngleUnit {
+        static void declare() {
+            bp::class_<AngleUnit>("AngleUnit", bp::no_init)
+                .def(double() * bp::self)
+                .def(int() * bp::self)
+                ;
+            bp::object module = bp::scope();
+            module.attr("radians") = radians;
+            module.attr("degrees") = degrees;
+            module.attr("arcminutes") = arcminutes;
+            module.attr("arcseconds") = arcseconds;
+        }
+    };
+
+    @Class(Angle) {
+        @Customize {
+            wrapper
+                .def(float_(bp::self))
+                .def(bp::self + bp::self)
+                .def(bp::self - bp::self)
+                .def(bp::self * bp::self)
+                .def(bp::self * double())
+                .def(bp::self * int())
+                .def(double() * bp::self)
+                .def(int() * bp::self)
+                .def(bp::self / double())
+                .def(bp::self / int())
+                .def(str(bp::self))
+                ;
+        }
+    };
 
     template <typename T, int N>
-    static void declare(char const * name) {
-        auto wrapper = bp::make_const_aware(
-            bp::class_< Point<T,N> >(
-                name, 
-                %%doc(Point)%%,
-                bp::init<T>(
-                    (bp::arg("val")=static_cast<T>(0)), 
-                    %%doc(Point::Point[scalar])%%
-                )
-            )
-        );
-        %%in_class(Point<T,N>)%%;
-        wrapper
-            .enable_shared_ptr()
-            .def(bp::init< Extent<T,N> const & >(bp::arg("other")))
-            .def(bp::init< Point<int,N> const & >(bp::arg("other")))
-            .def(bp::init< Point<double,N> const & >(bp::arg("other")))
-            ;
-        PyCoordinateBase::declare< Point<T,N> >(wrapper);
-        PyCoordinateBase::declareConstructor<T>(wrapper, (boost::mpl::int_<N>*)0);
-        declareBase<T,N>(wrapper);
+    void instantiateTN(std::string const & t, std::string const & n) {
+        PyExtent<T,N>::declare(("Extent" + n + t).c_str());
+        PyPoint<T,N>::declare(("Point" + n + t).c_str());
     }
 
-};
-
-struct PyLinearTransform {
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<LinearTransform>%%
-        );
-        %%ignore_members(getMatrix, getParameterVector)%%;
-        {
-            bp::scope inWrapper(wrapper.main_class());
-            %%auto_enum(LinearTransform::ParameterEnum)%%
-                  .export_values();
-        }
-        // The machinery below makes sure the returned numpy matrix points into the actual
-        // Eigen matrix owned by the transform, with proper reference-counting and 
-        // const-correctness - that means you can assign to the matrix!
-        //  - We wrap the const version first, and use return_internal_matrix so we
-        //    don't deep-copy the Eigen matrix.
-        //  - We wrap the non-const version second (this gives it higher overload priority).
-        //    Because it's a non-const member function, it will never be used by the const proxy,
-        //    which will default to the const version.
-        // Note that the Eigen converters automatically make the "Matrix const" a non-writeable
-        // numpy matrix.
-        wrapper
-            .def(
-                "getMatrix", 
-                (LinearTransform::Matrix const & (LinearTransform::*)() const)&LinearTransform::getMatrix, 
-                bp::return_internal_matrix<>()
-            )
-            .def(
-                "getMatrix", 
-                (LinearTransform::Matrix & (LinearTransform::*)())&LinearTransform::getMatrix, 
-                bp::as_const< bp::return_internal_matrix<> >()
-            )
-            ;
-
-        wrapper.main_class()
-            .def(bp::self * bp::self)
-            .def(str(bp::self))
-            ;
-        wrapper
-            .enable_shared_ptr()
-            .copy_method_to_proxy("__mul__")
-            .copy_method_to_proxy("__str__")
-            .%%auto_members_regex(.*)%%
-            .%%auto_method(getParameterVector, bp::squeeze_matrix<>())%%
-            .def("__getitem__", &Py_getitem<LinearTransform,4,double>)
-            .def("__setitem__", &Py_setitem<LinearTransform,4,double>)
-            .def("__len__", &Py_len<LinearTransform,4>)
-            ;
+    template <int N>
+    void instantiateN(std::string const & n) {
+        PyCoordinateExpr<N>::declare(("CoordinateExpr" + n).c_str());
+        instantiateTN<double,N>("D", n);
+        instantiateTN<int,N>("I", n);
     }
 
-};
-
-struct PyAffineTransform {
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<AffineTransform>%%
+    void declare() {
+        bputils::declareException<SingularTransformException,pex::exceptions::RuntimeErrorException>(
+            "SingularTransformException"
         );
-        %%ignore_members(getParameterVector, getLinear, getTranslation)%%;
-        {
-            bp::scope inWrapper(wrapper.main_class());
-            %%auto_enum(AffineTransform::ParameterEnum)%%
-                  .export_values();
-        }
-        wrapper.main_class()
-            .def(bp::self * bp::self)
-            .def(str(bp::self))
-            ;
-        wrapper
-            .enable_shared_ptr()
-            .copy_method_to_proxy("__mul__")
-            .copy_method_to_proxy("__str__")
-            .%%auto_members_regex(.*)%%
-            .%%auto_method(getParameterVector, bp::squeeze_matrix<>())%%
-            .%%auto_method(getTranslation[const], bp::as_const< bp::return_internal_reference<> >())%%
-            .%%auto_method(getTranslation[nonconst], bp::return_internal_reference<>())%%
-            .%%auto_method(getLinear[const], bp::as_const< bp::return_internal_reference<> >())%%
-            .%%auto_method(getLinear[nonconst], bp::return_internal_reference<>())%%
-            .def("__getitem__", &Py_getitem<AffineTransform,4,double>)
-            .def("__setitem__", &Py_setitem<AffineTransform,4,double>)
-            .def("__len__", &Py_len<AffineTransform,4>)
-            ;
+        instantiateN<2>("2");
+        instantiateN<3>("3");
+        PyLinearTransform::declare();
+        PyAffineTransform::declare();
+        PyBox2I::declare();
+        PyBox2D::declare();
+        PyAngleUnit::declare();
+        PyAngle::declare();
     }
 
-};
-
-struct PyBox2I {
-
-    static bp::object getSlices(Box2I const & self) {
-        return bp::make_tuple(
-            bp::slice(self.getBeginY(), self.getEndY()), 
-            bp::slice(self.getBeginX(), self.getEndX())
-        );
-    }
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Box2I>%%
-        );
-        %%ignore_members(getMin, getBegin, getDimensions, getSlices)%%;
-        {
-            bp::scope inWrapper(wrapper.main_class());
-            %%auto_enum(Box2I::EdgeHandlingEnum)%%
-                  .export_values();
-        }
-        wrapper.main_class()
-            .def(bp::self == bp::self)
-            .def(bp::self != bp::self)
-            .def(str(bp::self))
-            ;
-        wrapper
-            .enable_shared_ptr()
-            .copy_method_to_proxy("__eq__")
-            .copy_method_to_proxy("__ne__")
-            .%%auto_members_regex(.*)%%
-            .%%auto_method(getMin, bp::return_value_policy< bp::copy_const_reference >())%%
-            .%%auto_method(getBegin, bp::return_value_policy< bp::copy_const_reference >())%%
-            .%%auto_method(getDimensions, bp::return_value_policy< bp::copy_const_reference >())%%
-            .def("getSlices", getSlices)
-            .def(
-                bp::init< Box2D const &, Box2I::EdgeHandlingEnum >(
-                    (bp::arg("other"), bp::arg("edgeHandling")=Box2I::EXPAND)
-                )
-            )
-            ;
-    }
-
-};
-
-struct PyBox2D {
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Box2D>%%
-        );
-        %%ignore_members(getMin, getMax)%%;
-        wrapper.main_class()
-            .def(bp::self == bp::self)
-            .def(bp::self != bp::self)
-            .def(str(bp::self))
-            ;
-        wrapper
-            .enable_shared_ptr()
-            .copy_method_to_proxy("__eq__")
-            .copy_method_to_proxy("__ne__")
-            .%%auto_members_regex(.*)%%
-            .%%auto_method(getMin, bp::return_value_policy< bp::copy_const_reference >())%%
-            .%%auto_method(getMax, bp::return_value_policy< bp::copy_const_reference >())%%
-            ;
-    }
-
-};
-
-struct PyAngle {
-
-    static void declare() {
-        bp::class_<AngleUnit>("AngleUnit", bp::no_init)
-            .def(double() * bp::self)
-            .def(int() * bp::self)
-            ;
-        bp::object module = bp::scope();
-        module.attr("radians") = radians;
-        module.attr("degrees") = degrees;
-        module.attr("arcminutes") = arcminutes;
-        module.attr("arcseconds") = arcseconds;
-
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Angle>%%
-        );
-        wrapper.main_class()
-            .def(float_(bp::self))
-            .def(bp::self + bp::self)
-            .def(bp::self - bp::self)
-            .def(bp::self * bp::self)
-            .def(bp::self * double())
-            .def(bp::self * int())
-            .def(double() * bp::self)
-            .def(int() * bp::self)
-            .def(bp::self / double())
-            .def(bp::self / int())
-            .def(str(bp::self))
-            ;
-        wrapper
-            .enable_shared_ptr()
-            .copy_method_to_proxy("__float__")
-            .copy_method_to_proxy("__add__")
-            .copy_method_to_proxy("__sub__")
-            .copy_method_to_proxy("__mul__")
-            .copy_method_to_proxy("__div__")
-            .copy_method_to_proxy("__str__")
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-
-};
-
-void declare() {
-    bputils::declareException<SingularTransformException,pex::exceptions::RuntimeErrorException>(
-        "SingularTransformException"
-    );
-    PyCoordinateExpr::declare<2>("CoordinateExpr2");
-    PyCoordinateExpr::declare<3>("CoordinateExpr3");
-    PyExtent::declare<double,2>("Extent2D");
-    PyExtent::declare<int,2>("Extent2I");
-    PyExtent::declare<double,3>("Extent3D");
-    PyExtent::declare<int,3>("Extent3I");
-    PyPoint::declare<double,2>("Point2D");
-    PyPoint::declare<int,2>("Point2I");
-    PyPoint::declare<double,3>("Point3D");
-    PyPoint::declare<int,3>("Point3I");
-    PyLinearTransform::declare();
-    PyAffineTransform::declare();
-    PyBox2I::declare();
-    PyBox2D::declare();
-    PyAngle::declare();
 }
-
-} // anonymous
-
-}}} // namespace lsst::afw::geom
 
 BOOST_PYTHON_MODULE(_afw_geom) {
     lsst::bputils::registerConversions();

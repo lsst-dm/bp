@@ -22,5 +22,9 @@
 
 """Application Framework math code including Function, minimize, Kernel and convolve
 """
-from mathLib import *
-from warper import *
+from . import _afw_math
+from .warper import Warper
+
+from lsst.bputils import rescope, extend
+
+rescope(_afw_math, globals(), ignore=())

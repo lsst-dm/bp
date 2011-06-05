@@ -39,7 +39,7 @@ void declareBaseException() {
              "Deep-copy the exception.")
         .def("getTraceback", &Exception::getTraceback, bp::return_value_policy<bp::copy_to_tuple>())
         ;
-    bputils::detail::addExceptionProxy("Exception", wrapper);
+    bputils::detail::addExceptionProxy("Exception", "Base LSST exception class", wrapper);
     bputils::detail::ExceptionConverter<Exception>();
     bp::register_ptr_to_python< boost::shared_ptr<Exception> >();
     bp::register_exception_translator<Exception>(&translateException);

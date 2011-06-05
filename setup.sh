@@ -41,7 +41,7 @@ fi
 #
 
 if [ -f external/src/scons-2.0.1.tar.gz ]; then
-    external/build.py scons
+    external/build.py sconsDistrib
 else
     echo "SCons 2.0.1 tarball not found, skipping."
 fi

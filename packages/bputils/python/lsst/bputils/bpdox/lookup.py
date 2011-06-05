@@ -115,7 +115,7 @@ class CompoundNode(Node):
     visible = property(_get_visible)
 
     def hide(self):
-        self.hiddent = True
+        self.hidden = True
 
     def load(self, index):
         logging.debug("Loading compound {0} {1}.".format(self.kind, "::".join(self.name)))

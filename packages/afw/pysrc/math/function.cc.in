@@ -1,0 +1,83 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/math/Function.h"
+#include "lsst/afw/math/FunctionLibrary.h"
+
+#include "boost/python/ndarray.hpp"
+
+namespace bp = boost::python;
+
+@Customize {}
+
+@Namespace(lsst::afw::math) {
+
+template <typename ReturnT>
+struct FunctionTemplates {
+
+    @TemplateClass(Function, tparams={<ReturnT>}, noncopyable=True, exclude_list=[Function]) {
+        @Customize {
+            wrapper.@Member(getParameters, policies={bp::return_value_policy<bp::copy_to_tuple>()});
+        }
+    };
+
+    @TemplateClass(Function1, tparams={<ReturnT>}, noncopyable=True, exclude_list=[Function1]) {
+        typedef typename Function1<ReturnT>::Ptr Ptr;
+        @Customize {
+            wrapper.def("__call__", &Function1<ReturnT>::operator());
+        }
+    };
+
+    @TemplateClass(Function2, tparams={<ReturnT>}, noncopyable=True, exclude_list=[Function2]) {
+        typedef typename Function2<ReturnT>::Ptr Ptr;
+        @Customize {
+            wrapper.@Member(getDFuncDParameters, policies={bp::return_value_policy<bp::copy_to_tuple>()});
+            wrapper.def("__call__", &Function2<ReturnT>::operator());
+        }
+    };
+
+    @TemplateClass(
+        BasePolynomialFunction2, tparams={<ReturnT>}, noncopyable=True, 
+        exclude_list=[BasePolynomialFunction2]
+    ) {};
+
+    @TemplateClass(NullFunction1, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(NullFunction2, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(IntegerDeltaFunction1, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(IntegerDeltaFunction2, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(GaussianFunction1, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(GaussianFunction2, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(DoubleGaussianFunction2, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(PolynomialFunction1, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(PolynomialFunction2, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(Chebyshev1Function1, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(Chebyshev1Function2, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(LanczosFunction1, tparams={<ReturnT>}, exclude_list=[clone]) {};
+    @TemplateClass(LanczosFunction2, tparams={<ReturnT>}, exclude_list=[clone]) {};
+
+    static void declare(std::string const & t) {
+        PyFunction::declare(("Function" + t).c_str());
+        PyFunction1::declare(("Function1" + t).c_str());
+        PyFunction2::declare(("Function2" + t).c_str());
+        PyBasePolynomialFunction2::declare(("BasePolynomialFunction2" + t).c_str());
+        PyNullFunction1::declare(("NullFunction1" + t).c_str());
+        PyNullFunction2::declare(("NullFunction2" + t).c_str());
+        PyGaussianFunction1::declare(("GaussianFunction1" + t).c_str());
+        PyGaussianFunction2::declare(("GaussianFunction2" + t).c_str());
+        PyDoubleGaussianFunction2::declare(("DoubleGaussianFunction2" + t).c_str());
+        PyPolynomialFunction1::declare(("PolynomialFunction1" + t).c_str());
+        PyPolynomialFunction2::declare(("PolynomialFunction2" + t).c_str());
+        PyChebyshev1Function1::declare(("Chebyshev1Function1" + t).c_str());
+        PyChebyshev1Function2::declare(("Chebyshev1Function2" + t).c_str());
+        PyLanczosFunction1::declare(("LanczosFunction1" + t).c_str());
+        PyLanczosFunction2::declare(("LanczosFunction2" + t).c_str());
+    }
+
+};
+
+}
+
+@Namespace(lsst::afw::math, anonymous=False) {
+    void declareFunction() {
+        FunctionTemplates<float>::declare("F");
+        FunctionTemplates<double>::declare("D");
+    }
+}

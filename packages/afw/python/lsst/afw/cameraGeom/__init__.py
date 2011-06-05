@@ -22,4 +22,18 @@
 
 """Application Framework classes to handle a mosaic camera's geometry
 """
-from cameraGeomLib import *
+
+from . import _afw_cameraGeom
+from lsst.bputils import rescope, extend
+
+rescope(_afw_cameraGeom, globals(), ignore=())
+
+@extend(_afw_cameraGeom)
+class Id:
+
+    def __str__(self):
+        return "%d, %s" % (self.getSerial(), self.getName())
+
+    def __repr__(self):
+        return "Id(%s)" % (str(self))
+

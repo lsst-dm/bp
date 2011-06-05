@@ -419,7 +419,6 @@ public:
      * @param policy  the policy object update
      * @param errs  a validation error to add complaints to, if there are any.
      * @exception ValidationError if the value does not conform to this definition.
-     * @bpdox{label:no_name}
      */
     void setDefaultIn(Policy& policy, ValidationError* errs=0) const {
         setDefaultIn(policy, _name, errs);
@@ -431,7 +430,6 @@ public:
      * @param withName  the name to look for the value under.  If not given
      *                    the name set in this definition will be used.
      * @param errs  a validation error to add complaints to, if there are any.
-     * @bpdox{label:with_name}
      */
     void setDefaultIn(Policy& policy, const std::string& withName,
 		      ValidationError* errs=0) const;
@@ -443,7 +441,6 @@ public:
      * @param withName  the name to look for the value under.  If not given
      *                    the name set in this definition will be used.
      * @param errs  a validation error to add complaints to, if there are any.
-     * @bpdox{label:with_name}
      */
     template <typename T> void setDefaultIn(Policy& policy,
 					    const std::string& withName,

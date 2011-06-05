@@ -138,24 +138,28 @@ class EllipticityBase:
 EllipticityBase.complex = property(EllipticityBase.getComplex, EllipticityBase.setComplex)
 EllipticityBase.__const_proxy__.complex = property(EllipticityBase.__const_proxy__.getComplex)
 
-_add_props_to = [Axes, Quadrupole, EllipticityBase]
 Separable = {}
 
-for r in (DeterminantRadius, TraceRadius, LogDeterminantRadius, LogTraceRadius):
-    for e in (Distortion, ConformalShear, ReducedShear):
-        cls = getattr(_afw_geom_ellipses, "Separable" + e.__name__ + r.__name__)
-        Separable[e,r] = cls
-        _add_props_to.append(cls)
-        cls.ellipticity = property(cls.getEllipticity, cls.setEllipticity)
-        cls.__const_proxy__.ellipticity = property(cls.__const_proxy__.getEllipticity)
-    r.__str__ = float
-    r.__repr__ = lambda self: "%s(%r)" % (self.getName(), self.value)
+def injectProperties():
+    _add_props_to = [Axes, Quadrupole, EllipticityBase]
+    for r in (DeterminantRadius, TraceRadius, LogDeterminantRadius, LogTraceRadius):
+        for e in (Distortion, ConformalShear, ReducedShear):
+            cls = getattr(_afw_geom_ellipses, "Separable" + e.__name__ + r.__name__)
+            Separable[e,r] = cls
+            _add_props_to.append(cls)
+            cls.ellipticity = property(cls.getEllipticity, cls.setEllipticity)
+            cls.__const_proxy__.ellipticity = property(cls.__const_proxy__.getEllipticity)
+        r.__str__ = float
+        r.__repr__ = lambda self: "%s(%r)" % (self.getName(), self.value)
 
-for cls in _add_props_to:
-    for name in cls.ParameterEnum.names:
-        lower = name.lower()
-        title = name.title()
-        setattr(cls, lower, property(getattr(cls, "get" + title), getattr(cls, "set" + title)))
-        setattr(cls.__const_proxy__, lower, property(getattr(cls.__const_proxy__, "get" + title)))
+    for cls in _add_props_to:
+        for name in cls.ParameterEnum.names:
+            lower = name.lower()
+            title = name.title()
+            setattr(cls, lower, property(getattr(cls, "get" + title), getattr(cls, "set" + title)))
+            setattr(cls.__const_proxy__, lower, property(getattr(cls.__const_proxy__, "get" + title)))
 
-del _add_props_to
+injectProperties()
+
+del injectProperties
+del lsst

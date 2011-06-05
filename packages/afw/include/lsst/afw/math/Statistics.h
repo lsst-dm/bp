@@ -296,6 +296,7 @@ private:
 /**
  * @brief Handle a watered-down front-end to the constructor (no variance)
  * @relates Statistics
+ * @bpdox{label:im}
  */
 template<typename Pixel>
 Statistics makeStatistics(lsst::afw::image::Image<Pixel> const &img,
@@ -311,6 +312,7 @@ Statistics makeStatistics(lsst::afw::image::Image<Pixel> const &img,
 /**
  * @brief Handle a straigh front-end to the constructor
  * @relates Statistics
+ * @bpdox{label:imv}
  */
 template<typename ImageT, typename MaskT, typename VarianceT>
 Statistics makeStatistics(ImageT const &img,
@@ -326,6 +328,7 @@ Statistics makeStatistics(ImageT const &img,
 /**
  * @brief Handle MaskedImages, just pass the getImage() and getMask() values right on through.
  * @relates Statistics
+ * @bpdox{label:mi}
  */
 template<typename Pixel>
 Statistics makeStatistics(
@@ -345,6 +348,7 @@ Statistics makeStatistics(
  * @brief Front end for specialization to handle Masks
  * @note The definition (in Statistics.cc) simply calls the specialized constructor
  * @relates Statistics
+ * @bpdox{label:m}
  */            
 Statistics makeStatistics(lsst::afw::image::Mask<lsst::afw::image::MaskPixel> const &msk, 
                           int const flags,  
@@ -355,6 +359,7 @@ Statistics makeStatistics(lsst::afw::image::Mask<lsst::afw::image::MaskPixel> co
 /**
  * @brief The makeStatistics() overload to handle regular (non-masked) Images
  * @relates Statistics
+ * @bpdox{label:i}
  */
 template<typename Pixel>
 Statistics makeStatistics(
@@ -401,6 +406,7 @@ private:
 /**
  * @brief The makeStatistics() overload to handle std::vector<>
  * @relates Statistics
+ * @bpdox{label:vec}
  */
 template<typename EntryT>
 Statistics makeStatistics(std::vector<EntryT> const &v, ///< Image (or MaskedImage) whose properties we want
@@ -417,6 +423,7 @@ Statistics makeStatistics(std::vector<EntryT> const &v, ///< Image (or MaskedIma
 /**
  * @brief The makeStatistics() overload to handle lsst::afw::math::MaskedVector<>
  * @relates Statistics
+ * @bpdox{label:mvec}
  */
 template<typename EntryT>
 Statistics makeStatistics(lsst::afw::math::MaskedVector<EntryT> const &mv, ///< MaskedVector

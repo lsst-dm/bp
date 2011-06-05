@@ -93,7 +93,7 @@ namespace afwDetection = lsst::afw::detection;
 
 
 /** @brief Construct an Exposure with a blank MaskedImage of specified size (default 0x0) and
-  * a Wcs (which may be default constructed)
+  * a Wcs (which may be default constructed) @bpdox{label:wh}
   */          
 template<typename ImageT, typename MaskT, typename VarianceT> 
 afwImage::Exposure<ImageT, MaskT, VarianceT>::Exposure(
@@ -112,7 +112,7 @@ afwImage::Exposure<ImageT, MaskT, VarianceT>::Exposure(
 }
 
 /** @brief Construct an Exposure with a blank MaskedImage of specified size (default 0x0) and
-  * a Wcs (which may be default constructed)
+  * a Wcs (which may be default constructed) @bpdox{label:dim}
   */          
 template<typename ImageT, typename MaskT, typename VarianceT> 
 afwImage::Exposure<ImageT, MaskT, VarianceT>::Exposure(
@@ -130,7 +130,7 @@ afwImage::Exposure<ImageT, MaskT, VarianceT>::Exposure(
 }
 
 /** @brief Construct an Exposure with a blank MaskedImage of specified size (default 0x0) and
-  * a Wcs (which may be default constructed)
+  * a Wcs (which may be default constructed) @bpdox{label:bbox}
   */          
 template<typename ImageT, typename MaskT, typename VarianceT> 
 afwImage::Exposure<ImageT, MaskT, VarianceT>::Exposure(
@@ -147,7 +147,7 @@ afwImage::Exposure<ImageT, MaskT, VarianceT>::Exposure(
     setMetadata(lsst::daf::base::PropertySet::Ptr(new lsst::daf::base::PropertyList()));
 }
 
-/** @brief Construct an Exposure from a MaskedImage
+/** @brief Construct an Exposure from a MaskedImage     @bpdox{label:mi}
   */               
 template<typename ImageT, typename MaskT, typename VarianceT> 
 afwImage::Exposure<ImageT, MaskT, VarianceT>::Exposure(

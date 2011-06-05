@@ -1,0 +1,105 @@
+#include "lsst/bputils.h"
+#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/afw/math/Kernel.h"
+#include "lsst/afw/math/KernelFunctions.h"
+#include "lsst/afw/math/ConvolveImage.h"
+#include "lsst/afw/formatters/KernelFormatter.h"
+
+#include "indexing_suite/vector.hpp"
+#include "boost/python/ndarray.hpp"
+
+namespace bp = boost::python;
+
+@Customize {}
+
+@Namespace(lsst::afw::math) {
+
+    typedef Kernel::NullSpatialFunction NullSpatialFunction;
+
+    @Class(Kernel, noncopyable=True, exclude_list=[Kernel, Pixel, kernel_fill_factor]) {
+        @Customize {
+            bp::class_< std::vector<double> >("ParameterVector")
+                .def(bp::indexing::vector_suite< std::vector<double> >())
+                ;
+        }
+    };
+
+    @Class(FixedKernel, noncopyable=True) {
+        @Customize {
+            bputils::BoostPickleInterface<FixedKernel>::apply(wrapper);
+        }
+    };
+    @Class(AnalyticKernel, noncopyable=True) {
+        @Customize {
+            bputils::BoostPickleInterface<AnalyticKernel>::apply(wrapper);
+        }
+    };
+    @Class(DeltaFunctionKernel, noncopyable=True) {
+        @Customize {
+            bputils::BoostPickleInterface<DeltaFunctionKernel>::apply(wrapper);
+        }
+    };
+    @Class(LinearCombinationKernel, noncopyable=True) {
+        @Customize {
+            wrapper.@Member(getKernelList, policies={bp::return_value_policy<bp::copy_to_tuple>()});
+            bputils::BoostPickleInterface<LinearCombinationKernel>::apply(wrapper);
+        }
+    };
+
+    @Class(SeparableKernel, noncopyable=True) {
+        @Customize {
+            bputils::BoostPickleInterface<SeparableKernel>::apply(wrapper);
+        }
+    };
+
+    @Class(ConvolutionControl) {};
+
+    template <typename OutImageT, typename InImageT, typename KernelT>
+    static void declareConvolve3() {
+        @Function(convolve, tparams={<OutImageT,InImageT,KernelT>});
+    }
+
+    template <typename OutImageT, typename InImageT>
+    static void declareConvolve2() {
+        declareConvolve3<OutImageT,InImageT,Kernel>();
+        declareConvolve3<OutImageT,InImageT,AnalyticKernel>();
+        declareConvolve3<OutImageT,InImageT,DeltaFunctionKernel>();
+        declareConvolve3<OutImageT,InImageT,FixedKernel>();
+        declareConvolve3<OutImageT,InImageT,LinearCombinationKernel>();
+        declareConvolve3<OutImageT,InImageT,SeparableKernel>();
+        @Function(scaledPlus, tparams={<OutImageT,InImageT>});
+    }
+
+    template <typename T1, typename T2>
+    static void declareConvolve1() {
+        declareConvolve2< image::Image<T1>, image::Image<T2> >();
+        declareConvolve2< image::MaskedImage<T1>, image::MaskedImage<T2> >();
+    }
+
+    static void declareConvolve() {
+        declareConvolve1<double,double>();
+        declareConvolve1<double,float>();
+        declareConvolve1<double,int>();
+        declareConvolve1<double,boost::uint16_t>();
+        declareConvolve1<float,float>();
+        declareConvolve1<float,int>();
+        declareConvolve1<float,boost::uint16_t>();
+        declareConvolve1<int,int>();
+        declareConvolve1<boost::uint16_t,boost::uint16_t>();
+    }
+
+}
+
+@Namespace(lsst::afw::math, anonymous=False) {
+    void declareKernel() {
+        PyKernel::declare();
+        PyFixedKernel::declare();
+        PyAnalyticKernel::declare();
+        PyDeltaFunctionKernel::declare();
+        PyLinearCombinationKernel::declare();
+        PySeparableKernel::declare();
+        PyConvolutionControl::declare();
+        @Function(printKernel);
+        declareConvolve();
+    }
+}

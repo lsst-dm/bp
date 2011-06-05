@@ -134,9 +134,6 @@ namespace math {
     *
     * The kernel size is 2 x 2.
     */
-#if defined(SWIG)
-    #pragma SWIG nowarn=SWIGWARN_PARSE_NESTED_CLASS
-#endif
     class NearestWarpingKernel : public SeparableKernel {
     public:
         explicit NearestWarpingKernel()

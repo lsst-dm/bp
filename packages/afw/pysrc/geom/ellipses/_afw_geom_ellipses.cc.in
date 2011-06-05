@@ -4,31 +4,30 @@
 
 namespace bp = boost::python;
 
-namespace lsst { namespace afw { namespace geom { namespace ellipses { %%scope(lsst::afw::geom::ellipses)%%
+@Customize {}
 
-namespace {
+@Namespace(lsst::afw::geom::ellipses) {
 
-// Call policies to be used when wrapping transform and convolve methods of Ellipse and BaseCore;
-// These methods return expression objects that contain references to the ellipse/core and the argument,
-// and these policies ensure those stay around as long as the expression object does.
-typedef bp::with_custodian_and_ward_postcall< 
+    // Call policies to be used when wrapping transform and convolve methods of Ellipse and BaseCore;
+    // These methods return expression objects that contain references to the ellipse/core and the argument,
+    // and these policies ensure those stay around as long as the expression object does.
+    typedef bp::with_custodian_and_ward_postcall< 
     0, 1, 
-    bp::with_custodian_and_ward_postcall< 0 , 2 > 
-    > HelperPolicies;
-typedef bp::as_const<HelperPolicies> ConstHelperPolicies;
+        bp::with_custodian_and_ward_postcall< 0 , 2 > 
+        > HelperPolicies;
+    typedef bp::as_const<HelperPolicies> ConstHelperPolicies;
 
-struct PyBaseCore {
+    @Class(
+        BaseCore,
+        noncopyable=True,
+        exclude_list=[as, readParameters, writeParameters]
+    ) {
 
-    static LinearTransform getGridTransform(BaseCore const & self) {
-        return self.getGridTransform();
-    }
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<BaseCore,noncopyable>%%
-        );
-        {
-            bp::scope inBaseCore(wrapper.main_class());
+        static LinearTransform getGridTransform(BaseCore const & self) {
+            return self.getGridTransform();
+        }
+        
+        @Customize {
             bp::make_const_aware(bp::class_<BaseCore::Transformer>("Transformer", bp::no_init))
                 .def("copy", &BaseCore::Transformer::copy)
                 .def("inPlace", &BaseCore::Transformer::inPlace)
@@ -42,46 +41,32 @@ struct PyBaseCore {
                 .def("apply", &BaseCore::Convolution::apply)
                 .def("d", &BaseCore::Convolution::d)
                 ;
+            wrapper
+                .def(bp::self == bp::self)
+                .def(bp::self != bp::self)
+                .@Member(getParameterVector, policies={bp::squeeze_matrix<>()})
+                .@Member(transform[const], policies={ConstHelperPolicies()})
+                .@Member(transform[nonconst], policies={HelperPolicies()})
+                .@Member(convolve[const], policies={ConstHelperPolicies()})
+                .@Member(convolve[nonconst], policies={HelperPolicies()})
+                .@Member(getGridTransform, pointer={&getGridTransform})
+                ;
         }
-        %%ignore_members(transform, getGridTransform, convolve, getParameterVector, as)%%;
-        %%ignore_members(readParameters, writeParameters)%%;
-        wrapper.main_class()
-            .def(bp::self == bp::self)
-            .def(bp::self != bp::self)
-            ;
-        wrapper
-            .enable_shared_ptr()
-            .copy_method_to_proxy("__eq__")
-            .copy_method_to_proxy("__ne__")
-            .%%auto_members_regex(.*)%%
-            .%%auto_method(getParameterVector, bp::squeeze_matrix<>())%%
-            .%%auto_method(transform[const], ConstHelperPolicies())%%
-            .%%auto_method(transform[nonconst], HelperPolicies())%%
-            .%%auto_method(convolve[const], ConstHelperPolicies())%%
-            .%%auto_method(convolve[nonconst], HelperPolicies())%%
-            .def(
-                "getGridTransform", &getGridTransform,
-                %%doc(BaseCore::getGridTransform)%%
-            )
-            ;
-    }
 
-};
+    };
 
-struct PyEllipse {
+    @Class(
+        Ellipse,
+        exclude_list=[readParameters, writeParameters, getCore]
+    ) {
 
-    typedef Ellipse::Envelope Envelope;
+        typedef Ellipse::Envelope Envelope;
 
-    static AffineTransform getGridTransform(Ellipse const & self) {
-        return self.getGridTransform();
-    }
+        static AffineTransform getGridTransform(Ellipse const & self) {
+            return self.getGridTransform();
+        }
 
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Ellipse>%%
-        );
-        {
-            bp::scope inEllipse(wrapper.main_class());
+        @Customize {
             bp::make_const_aware(bp::class_<Ellipse::Transformer>("Transformer", bp::no_init))
                 .def("copy", &Ellipse::Transformer::copy)
                 .def("inPlace", &Ellipse::Transformer::inPlace)
@@ -93,296 +78,122 @@ struct PyEllipse {
                 .def("inPlace", &Ellipse::Convolution::inPlace)
                 .def("d", &Ellipse::Convolution::d)
                 ;
-            %%auto_enum(Ellipse::ParameterEnum)%%
-                  .export_values();
+            wrapper
+                .def(bp::self == bp::self)
+                .def(bp::self != bp::self)
+                .@Member(getParameterVector, policies={bp::squeeze_matrix<>()})
+                .@Member(transform[const], policies={ConstHelperPolicies()})
+                .@Member(transform[nonconst], policies={HelperPolicies()})
+                .@Member(convolve[const], policies={ConstHelperPolicies()})
+                .@Member(convolve[nonconst], policies={HelperPolicies()})
+                .@Member(getCenter, policies={bp::const_aware::return_internal<>()})
+                .@Member(getCorePtr, pyname="getCore")
+                .@Member(getGridTransform, pointer={&getGridTransform})
+                ;
+        }  
+    };
+
+    @Class(Axes, exclude_list=[readParameters, writeParameters]) {};
+
+    @Class(Quadrupole, exclude_list=[readParameters, writeParameters]) {
+        @Customize {
+            wrapper.@Member(getMatrix, policies={bp::return_internal_matrix<>()});
         }
-        %%ignore_members(transform, getGridTransform, convolve, getParameterVector)%%;
-        %%ignore_members(readParameters, writeParameters, getCenter, getCore, getCorePtr)%%;
-        wrapper.main_class()
-            .def(bp::self == bp::self)
-            .def(bp::self != bp::self)
+    };
+
+}
+
+@Namespace(lsst::afw::geom::ellipses::detail) {
+
+    @Class(EllipticityBase) {
+        @Customize {
+            wrapper
+                .@Member(getComplex, policies={bp::return_value_policy<bp::return_by_value>()})
+                .add_property("e", &EllipticityBase::getE, &EllipticityBase::setE)
+                .add_property("theta", &EllipticityBase::getTheta)
             ;
-        wrapper
-            .enable_shared_ptr()
-            .copy_method_to_proxy("__eq__")
-            .copy_method_to_proxy("__ne__")
-            .%%auto_members_regex(.*)%%
-            .%%auto_method(getParameterVector, bp::squeeze_matrix<>())%%
-            .%%auto_method(transform[const], ConstHelperPolicies())%%
-            .%%auto_method(transform[nonconst], HelperPolicies())%%
-            .%%auto_method(convolve[const], ConstHelperPolicies())%%
-            .%%auto_method(convolve[nonconst], HelperPolicies())%%
-            .%%auto_method(getCenter[const], bp::as_const< bp::return_internal_reference<> >())%%
-            .%%auto_method(getCenter[nonconst], bp::return_internal_reference<>())%%
-            .%%auto_method_rename(getCorePtr, getCore)%%
-            .def(
-                "getGridTransform", &getGridTransform,
-                %%doc(Ellipse::getGridTransform)%%
-            )
-            ;
-    }
-
-};
-
-struct PyAxes {
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Axes>%%
-        );
-        {
-            bp::scope inWrapper(wrapper.main_class());
-            %%auto_enum(Axes::ParameterEnum)%%
-                  .export_values();
         }
-        %%ignore_members(readParameters, writeParameters)%%;
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
+    };
 
-};
+}
 
-struct PyQuadrupole {
+@Namespace(lsst::afw::geom::ellipses) {
 
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Quadrupole>%%
-        );
-        {
-            bp::scope inWrapper(wrapper.main_class());
-            %%auto_enum(Quadrupole::ParameterEnum)%%
-                  .export_values();
-        }
-        %%ignore_members(readParameters, writeParameters, getMatrix)%%;
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            .%%auto_method(getMatrix, bp::return_internal_matrix<>())%%
-            ;
-    }
+    @Class(Distortion) {};
+    @Class(ConformalShear) {};
+    @Class(ReducedShear) {};
 
-};
-
-} // anonymous
-
-namespace detail { %%scope(lsst::afw::geom::ellipses::detail)%%
-namespace {
-
-struct PyEllipticityBase {
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<EllipticityBase,noncopyable>%%
-        );
-        {
-            bp::scope inWrapper(wrapper.main_class());
-            %%auto_enum(EllipticityBase::ParameterEnum)%%
-                  .export_values();
-        }
-        %%ignore_members(getComplex)%%;
-        wrapper
-            .%%auto_members_regex(.*)%%
-            .%%auto_method(getComplex, bp::return_value_policy<bp::return_by_value>())%%
-            .add_property("e", &EllipticityBase::getE, &EllipticityBase::setE)
-            .add_property("theta", &EllipticityBase::getTheta)
-            ;
-    }
-
-};
-
-} // anonymous
-} // namespace detail
-
-namespace { %%scope(lsst::afw::geom::ellipses)%%
-
-struct PyDistortion {
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Distortion>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-};
-
-struct PyConformalShear {
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<ConformalShear>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-};
-
-struct PyReducedShear {
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<ReducedShear>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-};
-
-template <typename T>
-struct PyRadius {
+    template <typename T>
+        struct PyRadius {
     
-    static double get(T const & self) { return self; }
-    static void set(T & self, double value) { self = value; }
-
-    static void declare(char const * name) {
-        auto wrapper = bp::make_const_aware(
-            bp::class_<T>(name, bp::init<double>(bp::arg("value")=double(T())))
-        );
-        wrapper.main_class()
-            .def(float_(bp::self))
-            .def(str(bp::self))
-            ;
-        wrapper
-            .enable_shared_ptr()
-            .copy_method_to_proxy("__float__")
-            .copy_method_to_proxy("__str__")
-            .def("normalize", &T::normalize)
-            .def("getName", &T::getName)
-            .def("get", &get)
-            .def("set", &set)
-            .add_property("value", &get, &set)
-            ;
-        bp::implicitly_convertible<T,double>();
-    }
-};
-
-template <typename Ellipticity, typename Radius>
-struct PySeparable {
-
-    typedef Separable<Ellipticity,Radius> Class;
-
-    static void setEllipticity(Class & self, Ellipticity const & ellipticity) {
-        self.getEllipticity() = ellipticity;
-    }
-
-    static void declare() {
-        std::string name("Separable");
-        name += Ellipticity::getName();
-        name += Radius::getName();
-        auto wrapper = bp::make_const_aware(
-            bp::class_< Class, bp::bases<BaseCore> >(
-                name.c_str(),
-                %%doc(Separable)%%,
-                bp::no_init
+        static double get(T const & self) { return self; }
+        static void set(T & self, double value) { self = value; }
+        
+        static void declare(char const * name) {
+            bp::const_aware::exposer<T>(
+                name, bp::init<double>(bp::arg("value")=double(T()))
             )
-        );
-        {
-            bp::scope inWrapper(wrapper.main_class());
-            bp::enum_< typename Class::ParameterEnum >("ParameterEnum")
-                .value("E1", Class::E1)
-                .value("E2", Class::E2)
-                .value("RADIUS", Class::RADIUS)
-                .export_values()
+                .def(float_(bp::self))
+                .def(str(bp::self))
+                .enable_shared_ptr()
+                .def("normalize", &T::normalize)
+                .def("getName", &T::getName)
+                .def("get", &get)
+                .def("set", &set)
+                .add_property("value", &get, &set)
+            ;
+            bp::implicitly_convertible<T,double>();
+        }
+    };
+
+    template <typename Ellipticity, typename Radius>
+    @TemplateClass(
+        Separable, tparams={<Ellipticity,Radius>},
+        exclude_list=[readParameters, writeParameters]
+    ) {
+        static void setEllipticity(Separable<Ellipticity,Radius> & self, Ellipticity const & ellipticity) {
+            self.getEllipticity() = ellipticity;
+        }
+        @Customize {
+            wrapper
+                .@Member(getRadius, policies={bp::const_aware::return_internal<>()})
+                .@Member(getEllipticity, policies={bp::const_aware::return_internal<>()})
+                .def("setEllipticity", &setEllipticity)
                 ;
         }
-        %%in_class(Separable<Ellipticity,Radius>)%%;
-        %%ignore_members(readParameters, writeParameters, ParameterEnum, Separable)%%;
-        %%ignore_members(getRadius, getEllipticity, setRadius)%%;
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            .def(
-                "getRadius", (Radius const & (Class::*)() const)&Class::getRadius,
-                bp::as_const< bp::return_internal_reference<> >()
-            )
-            .def(
-                "getRadius", (Radius & (Class::*)())&Class::getRadius,
-                bp::return_internal_reference<>()
-            )
-            .def("setRadius", (void (Class::*)(Radius const &))&Class::setRadius)
-            .def("setRadius", (void (Class::*)(double))&Class::setRadius)
-            .def(
-                "getEllipticity", (Ellipticity const & (Class::*)() const)&Class::getEllipticity,
-                bp::as_const< bp::return_internal_reference<> >()
-            )
-            .def(
-                "getEllipticity", (Ellipticity & (Class::*)())&Class::getEllipticity,
-                bp::return_internal_reference<>()
-            )
-            .def("setEllipticity", &setEllipticity)
-            .def(
-                bp::init<double,double,double,bool>(
-                    (bp::arg("e1")=0.0, bp::arg("e2")=0.0, bp::arg("radius")=Radius(), 
-                     bp::arg("normalize")=true)
-                )
-            )
-            .def(
-                bp::init< std::complex<double> const &, double, bool >(
-                    (bp::arg("complex"), bp::arg("radius")=Radius(), bp::arg("normalize")=true)
-                )
-            )
-            .def(
-                bp::init< Ellipticity const &, double, bool >(
-                    (bp::arg("ellipticity"), bp::arg("radius")=Radius(), bp::arg("normalize")=true)
-                )
-            )
-            .def(
-                bp::init< BaseCore::ParameterVector const &, bool >(
-                    (bp::arg("parameters"), bp::arg("normalize")=false)
-                )
-            )
-            .def(bp::init<Class const &>(bp::arg("other")))
-            .def(bp::init<BaseCore const &>(bp::arg("other")))
-            .def(bp::init<BaseCore::Transformer const &>(bp::arg("transformer")))
-            .def(bp::init<BaseCore::Convolution const &>(bp::arg("convolution")))
-            ;
+    };
+
+    template <typename Radius>
+    void instantiateSeparable(std::string const & radius) {
+        PyRadius<Radius>::declare(radius.c_str());
+        PySeparable<Distortion,Radius>::declare(("SeparableDistortion" + radius).c_str());
+        PySeparable<ReducedShear,Radius>::declare(("SeparableReducedShear" + radius).c_str());
+        PySeparable<ConformalShear,Radius>::declare(("SeparableConformalShear" + radius).c_str());
+    }
+    
+    @Class(Parametric) {
+        @Customize {
+            wrapper.def("__call__", &Parametric::operator());
+        }
+    };
+
+    void declare() {
+        PyBaseCore::declare();
+        PyEllipse::declare();
+        PyAxes::declare();
+        PyQuadrupole::declare();
+        detail::PyEllipticityBase::declare();
+        PyDistortion::declare();
+        PyConformalShear::declare();
+        PyReducedShear::declare();
+        instantiateSeparable<DeterminantRadius>("DeterminantRadius");
+        instantiateSeparable<TraceRadius>("TraceRadius");
+        instantiateSeparable<LogDeterminantRadius>("LogDeterminantRadius");
+        instantiateSeparable<LogTraceRadius>("LogTraceRadius");
+        PyParametric::declare();
     }
 
-};
-
-template <typename Ellipticity>
-void instantiateSeparable() {
-    PySeparable<Ellipticity,TraceRadius>::declare();
-    PySeparable<Ellipticity,DeterminantRadius>::declare();
-    PySeparable<Ellipticity,LogTraceRadius>::declare();
-    PySeparable<Ellipticity,LogDeterminantRadius>::declare();
 }
-
-struct PyParametric {
-    static void declare() {
-        %%auto_class<Parametric>%%
-            .def("__call__", &Parametric::operator())
-            ;
-    }
-};
-
-void declare() {
-    PyBaseCore::declare();
-    PyEllipse::declare();
-    PyAxes::declare();
-    PyQuadrupole::declare();
-    detail::PyEllipticityBase::declare();
-    PyDistortion::declare();
-    PyConformalShear::declare();
-    PyReducedShear::declare();
-    PyRadius<DeterminantRadius>::declare("DeterminantRadius");
-    PyRadius<TraceRadius>::declare("TraceRadius");
-    PyRadius<LogDeterminantRadius>::declare("LogDeterminantRadius");
-    PyRadius<LogTraceRadius>::declare("LogTraceRadius");
-    instantiateSeparable<Distortion>();
-    instantiateSeparable<ConformalShear>();
-    instantiateSeparable<ReducedShear>();
-    PyParametric::declare();
-}
-
-} // anonymous
-
-}}}} // namespace lsst::afw::geom::ellipses
 
 BOOST_PYTHON_MODULE(_afw_geom_ellipses) {
     lsst::bputils::registerConversions();

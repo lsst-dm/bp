@@ -20,5 +20,3 @@ RECURSIVE = YES
 EXCLUDE = ../.sconf_temp ../examples ../pysrc ../tests ../ups
 
 EXCLUDE_PATTERNS = */.svn*
-
-EXAMPLE_PATH = ../examples

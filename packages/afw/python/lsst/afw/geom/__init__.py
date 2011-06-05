@@ -27,6 +27,7 @@ import lsst.bputils
 
 lsst.bputils.rescope(_afw_geom, globals(), ignore=())
 lsst.bputils.apply(_afw_geom, lsst.bputils.copy_str_to_repr, only_classes=True, ignore=("AngleUnit",))
+del lsst
 
 BoxI = Box2I
 BoxD = Box2D

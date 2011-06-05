@@ -1,0 +1,139 @@
+#include "lsst/bputils.h"
+#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/afw/image/Calib.h"
+#include "lsst/afw/image/Filter.h"
+#include "lsst/afw/image/Wcs.h"
+#include "lsst/afw/image/TanWcs.h"
+#include "lsst/afw/image/Color.h"
+#include "lsst/afw/image/Defect.h"
+
+#include "boost/python/ndarray.hpp"
+
+#include "lsst/afw/formatters/WcsFormatter.h"
+#include "lsst/afw/formatters/TanWcsFormatter.h"
+
+namespace bp = boost::python;
+
+@Customize {}
+
+@Namespace(lsst::afw::image, anonymous=False) {
+    void declareImage();
+    void declareMask();
+    void declareMaskedImage();
+    void declareImagePca();
+    void declareExposure();
+}
+
+@Namespace(lsst::afw::image) {
+
+    @Class(FilterProperty) {
+        @Customize {
+            wrapper.@Member(lookup, policies={bp::return_value_policy< bp::reference_existing_object >()});
+        }
+    };
+
+    @Class(Filter) {
+        static int const AUTO = Filter::AUTO;
+        static int const UNKNOWN = Filter::UNKNOWN;
+        @Customize {
+            wrapper
+                .@Member(
+                    getFilterProperty, policies={bp::return_value_policy< bp::reference_existing_object >()}
+                )
+                .@Member(getNames, policies={bp::return_value_policy< bp::copy_to_list >()})
+                ;
+        }
+    };
+    int const PyFilter::AUTO;
+    int const PyFilter::UNKNOWN;
+
+    @Class(Calib) {};
+
+    @Class(Color) {};
+
+    @Class(DefectBase) {
+        @Customize {
+            wrapper.@Member(getBBox, policies={bp::const_aware::return_internal<>()});
+        }
+    };
+
+    @Class(Wcs, noncopyable=True, exclude_list=[Wcs]) {
+        typedef Wcs::Ptr Ptr;
+        typedef geom::Point2D Point2D;
+        @Customize {
+            wrapper.def(bp::self == bp::self);
+            bputils::BoostPickleInterface<Wcs>::apply(wrapper);
+        }
+    };
+
+    @Class(TanWcs, noncopyable=True) {
+        @Customize {
+            wrapper.def(bp::self == bp::self);
+            bputils::BoostPickleInterface<TanWcs>::apply(wrapper);
+        }
+    };
+
+    Wcs::Ptr createWcs(geom::Point2D const & crval, geom::Point2D const & crpix, 
+                       double CD11, double CD12, double CD21, double CD22) {
+        Eigen::Matrix2d CD;
+        CD(0, 0) = CD11;
+        CD(0, 1) = CD12;
+        CD(1, 0) = CD21;
+        CD(1, 1) = CD22;
+        return Wcs::Ptr(new Wcs(crval, crpix, CD));
+    }
+    
+    // This converter makes 'None' in Python convertible to the special NoWcs object.
+    struct NoWcsFromNone {
+        NoWcsFromNone() {
+            bp::converter::registry::insert(&extract, bp::type_id<Wcs>(), &get_pytype); 
+        }
+        static void * extract(PyObject * obj) {
+            if (obj == Py_None)
+                return &NoWcs;
+            return 0;
+        }
+        static PyTypeObject const * get_pytype() { return Py_None->ob_type; }
+    };
+
+
+    void declare() {
+        PyFilterProperty::declare();
+        PyFilter::declare();
+        PyCalib::declare();
+        PyColor::declare();
+        @Enum(ImageOrigin);
+        @Function(indexToPosition);
+        @Function(positionToIndex[noresidual]);
+        @Function(
+            positionToIndex[residual], pyname="positionToIndexAndResidual", 
+            args={(bp::arg("pos"), bp::arg("_residual")=true)}
+        );
+        PyWcs::declare();
+        @Function(makeWcs);
+        NoWcsFromNone();
+        bp::def(
+            "createWcs", &createWcs, 
+            (bp::arg("crval"), bp::arg("crpix"), 
+             bp::arg("CD11"), bp::arg("CD12"), bp::arg("CD21"), bp::arg("CD22")),
+            "Create a Wcs from crval, crpix, and the elements of CD"
+        );
+        declareImage();
+        declareMask();
+        declareMaskedImage();
+        declareExposure();
+        declareImagePca();
+    }
+
+}
+
+BOOST_PYTHON_MODULE(_afw_image) {
+    lsst::bputils::registerConversions();
+    bp::numpy::initialize();
+    bp::import("lsst.afw.geom");
+    bp::import("lsst.afw.coord");
+    bp::import("lsst.daf.base");
+    bp::import("lsst.daf.data");
+    bp::import("lsst.pex.policy");
+    lsst::afw::image::declare();
+}

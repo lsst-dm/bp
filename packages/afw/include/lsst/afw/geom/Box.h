@@ -64,7 +64,7 @@ public:
     Box2I(Point2I const & minimum, Point2I const & maximum, bool invert=true);
     Box2I(Point2I const & minimum, Extent2I const & dimensions, bool invert=true);
 
-    /// @brief Conversion from floating-point box. @bpdox{ignore}
+    /// @brief Conversion from floating-point box.
     explicit Box2I(Box2D const & other, EdgeHandlingEnum edgeHandling=EXPAND);
 
     /// @brief Standard copy constructor.

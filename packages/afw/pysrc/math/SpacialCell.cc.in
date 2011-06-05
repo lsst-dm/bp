@@ -1,0 +1,74 @@
+#include "lsst/bputils.h"
+#include "lsst/afw/math/SpatialCell.h"
+#include "lsst/afw/image/Image.h"
+#include "lsst/afw/image/MaskedImage.h"
+
+#include "indexing_suite/vector.hpp"
+
+namespace bp = boost::python;
+
+@Customize {}
+
+namespace boost { namespace python { namespace indexing {
+
+template <>
+struct value_traits< lsst::afw::math::SpatialCell::Ptr > 
+    : public simple_value_traits< lsst::afw::math::SpatialCell::Ptr >
+{
+    BOOST_STATIC_CONSTANT(bool, equality_comparable = false);
+    BOOST_STATIC_CONSTANT(bool, less_than_comparable = false);
+};
+
+}}}
+
+@Namespace(lsst::afw::math) {
+
+    @Class(SpatialCellCandidate, noncopyable=True, exclude_list=[SpatialCellCandidate]) {};
+
+    @Class(CandidateVisitor, noncopyable=True) {};
+
+    template <typename ImageT>
+    @TemplateClass(
+        SpatialCellImageCandidate, noncopyable=True, tparams={<ImageT>},
+        exclude_list=[SpatialCellImageCandidate, getImage]
+    ) {
+        @Customize {
+            wrapper.@Member(getImage, pointer={&SpatialCellImageCandidate<ImageT>::getImage});
+        }
+    };
+
+    @Class(SpatialCell, exclude_list=[SpatialCell, begin, end, CandidateList]) {
+        @Customize {
+            bp::container_from_python_sequence< SpatialCell::CandidateList >();
+            wrapper.@Member(getBBox, policies={bp::return_value_policy<bp::copy_const_reference>()});
+            wrapper.@Member(
+                SpatialCell, 
+                args={(bp::arg("label"), bp::arg("bbox")=geom::Box2I(), bp::arg("candidateList")=bp::tuple())}
+            );
+            wrapper.main_class().def("__iter__", bp::iterator<SpatialCell>());
+        }
+    };
+
+    @Class(SpatialCellSet, exclude_list=[CellList]) {
+        @Customize {
+            bp::class_< SpatialCellSet::CellList >("CellList")
+                .def(bp::indexing::vector_suite< SpatialCellSet::CellList >())
+                ;
+            wrapper.@Member(getCellList, policies={bp::const_aware::return_internal<>()});
+        }
+    };
+
+}
+
+@Namespace(lsst::afw::math, anonymous=False) {
+    void declareSpatialCell() {
+        PySpatialCellCandidate::declare();
+        PyCandidateVisitor::declare();
+        PySpatialCellImageCandidate< image::Image<float> >::declare("SpatialCellImageCandidateF");
+        PySpatialCellImageCandidate< image::Image<double> >::declare("SpatialCellImageCandidateD");
+        PySpatialCellImageCandidate< image::MaskedImage<float> >::declare("SpatialCellImageCandidateMF");
+        PySpatialCellImageCandidate< image::MaskedImage<double> >::declare("SpatialCellImageCandidateMD");
+        PySpatialCell::declare();
+        PySpatialCellSet::declare();
+    }
+}

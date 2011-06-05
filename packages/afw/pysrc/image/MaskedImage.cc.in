@@ -1,0 +1,61 @@
+#include "lsst/bputils.h"
+#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/afw/image/MaskedImage.h"
+#include "lsst/afw/formatters/MaskedImageFormatter.h"
+
+#include "boost/python/ndarray.hpp"
+
+namespace bp = boost::python;
+
+@Namespace(lsst::afw::image) {
+
+    template <typename ImagePixelT, typename MaskPixelT, typename VariancePixelT>
+    @TemplateClass(
+        MaskedImage, tparams={<ImagePixelT,MaskPixelT,VariancePixelT>},
+        include_regex="((get|set)\w+)|(scaled\w+)|(\w+FileName)",
+        include_list=[MaskedImage, indexToPosition, positionToIndex, writeFits]
+    ) {
+        template <typename OtherT> static MaskedImage<OtherT> convert(
+            MaskedImage<ImagePixelT,MaskPixelT,VariancePixelT> const & self
+        ) {
+            return MaskedImage<OtherT,MaskPixelT,VariancePixelT>(self, true);
+        }
+        @Customize {
+            wrapper.def(bp::self <<= bp::self);
+            wrapper.def(bp::self += bp::self);
+            wrapper.def(bp::self += bp::other<ImagePixelT>());
+            wrapper.def(bp::self += bp::other< Image<ImagePixelT> >());
+            wrapper.def(bp::self += bp::other< math::Function2<double> >());
+            wrapper.def(bp::self -= bp::self);
+            wrapper.def(bp::self -= bp::other<ImagePixelT>());
+            wrapper.def(bp::self -= bp::other< Image<ImagePixelT> >());
+            wrapper.def(bp::self -= bp::other< math::Function2<double> >());
+            wrapper.def(bp::self *= bp::self);
+            wrapper.def(bp::self *= bp::other< Image<ImagePixelT> >());
+            wrapper.def(bp::self *= bp::other<ImagePixelT>());
+            wrapper.def(bp::self /= bp::self);
+            wrapper.def(bp::self /= bp::other< Image<ImagePixelT> >());
+            wrapper.def(bp::self /= bp::other<ImagePixelT>());
+            wrapper.def("convertU", &convert<boost::uint16_t>);
+            wrapper.def("convertI", &convert<int>);
+            wrapper.def("convertF", &convert<float>);
+            wrapper.def("convertD", &convert<double>);
+            bputils::BoostPickleInterface< MaskedImage<ImagePixelT,MaskPixelT,VariancePixelT> >::apply(wrapper);
+        }
+    };
+
+    template <typename PixelT>
+    void instantiateMaskedImage(std::string const & t) {
+        PyMaskedImage< PixelT, MaskPixel, VariancePixel >::declare(("MaskedImage" + t).c_str());
+    }
+
+}
+
+@Namespace(lsst::afw::image, anonymous=False) {
+    void declareMaskedImage() {
+        instantiateMaskedImage<boost::uint16_t>("U");
+        instantiateMaskedImage<int>("I");
+        instantiateMaskedImage<float>("F");
+        instantiateMaskedImage<double>("D");
+    }
+}

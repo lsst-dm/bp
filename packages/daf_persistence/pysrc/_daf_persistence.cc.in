@@ -3,131 +3,76 @@
 
 namespace bp = boost::python;
 
-namespace lsst { namespace daf { namespace persistence { %%scope(lsst::daf::persistence)%%
+@Customize {}
 
-namespace {
+@Namespace(lsst::daf::persistence) {
 
-struct PyDbAuth {
+    @Class(DbAuth, const_aware=False, enable_shared_ptr=False) {};
 
-    static void declare() {
-        %%auto_class<DbAuth>%%
-            .%%auto_members_regex(.*)%%
-            ;
+    @Class(LogicalLocation) {};
+
+    @Class(Storage, noncopyable=True) {
+        @Customize {
+            bp::container_from_python_sequence<Storage::List>();
+        }
+    };
+
+    @Class(DbStorage, noncopyable=True, exclude_list=[setColumn, condParam, getColumnByPos, outParam]) {
+        @Customize {
+            bp::container_from_python_sequence<Storage::List>();
+            declareTemplates<char>(wrapper, "Char");
+            declareTemplates<short>(wrapper, "Short");
+            declareTemplates<int>(wrapper, "Int");
+            declareTemplates<long>(wrapper, "Long");
+            declareTemplates<long long>(wrapper, "Int64");
+            declareTemplates<float>(wrapper, "Float");
+            declareTemplates<double>(wrapper, "Double");
+            declareTemplates<std::string>(wrapper, "String");
+            declareTemplates<bool>(wrapper, "Bool");
+        }
+        template <typename T, typename Wrapper>
+        static void declareTemplates(Wrapper & wrapper, std::string const & name) {
+            wrapper.def(
+                ("setColumn" + name).c_str(), &DbStorage::setColumn<T>,
+                (bp::arg("columnName"), bp::arg("value")),
+                @Doc(DbStorage::setColumn)
+            );
+            wrapper.def(
+                ("condParam" + name).c_str(), &DbStorage::condParam<T>,
+                (bp::arg("paramName"), bp::arg("value")),
+                @Doc(DbStorage::condParam)
+            );
+            wrapper.def(
+                ("getColumnByPos" + name).c_str(), &DbStorage::getColumnByPos<T>,
+                bp::arg("pos"),
+                @Doc(DbStorage::getColumnByPos)
+            );
+        }
+    };
+
+    @Class(DbTsvStorage, noncopyable=True) {};
+
+    @Class(Persistence, noncopyable=True) {
+        @Customize {
+            wrapper
+                .@Member(
+                    unsafeRetrieve, 
+                    policies={bp::return_value_policy< bp::manage_new_object >()}
+                )
+                ;
+        }
+    };
+
+    void declare() {
+        PyDbAuth::declare();
+        PyLogicalLocation::declare();
+        PyStorage::declare();
+        PyDbStorage::declare();
+        PyDbTsvStorage::declare();
+        PyPersistence::declare();
     }
-
-};
-
-struct PyLogicalLocation {
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<LogicalLocation>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-
-};
-
-struct PyStorage {
-
-    static void declare() {
-        bp::container_from_python_sequence<Storage::List>();
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Storage,noncopyable>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-
-};
-
-struct PyDbStorage {
-
-    static void declare() {
-        bp::container_from_python_sequence< std::vector<std::string> >();
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<DbStorage,noncopyable>(bp::init<>())%%
-        );
-        %%ignore_members(setColumn, condParam, getColumnByPos, outParam)%%;
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_members_regex(.*)%%
-            ;
-        declareTemplates<char>(wrapper, "Char");
-        declareTemplates<short>(wrapper, "Short");
-        declareTemplates<int>(wrapper, "Int");
-        declareTemplates<long>(wrapper, "Long");
-        declareTemplates<long long>(wrapper, "Int64");
-        declareTemplates<float>(wrapper, "Float");
-        declareTemplates<double>(wrapper, "Double");
-        declareTemplates<std::string>(wrapper, "String");
-        declareTemplates<bool>(wrapper, "Bool");
-    }
-
-    template <typename T, typename Wrapper>
-    static void declareTemplates(Wrapper & wrapper, std::string const & name) {
-        wrapper.def(
-            ("setColumn" + name).c_str(), &DbStorage::setColumn<T>,
-            (bp::arg("columnName"), bp::arg("value")),
-            %%doc(DbStorage::setColumn)%%
-        );
-        wrapper.def(
-            ("condParam" + name).c_str(), &DbStorage::condParam<T>,
-            (bp::arg("paramName"), bp::arg("value")),
-            %%doc(DbStorage::condParam)%%
-        );
-        wrapper.def(
-            ("getColumnByPos" + name).c_str(), &DbStorage::getColumnByPos<T>,
-            bp::arg("pos"),
-            %%doc(DbStorage::getColumnByPos)%%
-        );
-    }
-
-};
-
-struct PyDbTsvStorage {
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<DbTsvStorage,noncopyable>(bp::init<>())%%
-        );
-        wrapper.enable_shared_ptr();
-    }
-
-};
-
-struct PyPersistence {
-
-    static void declare() {
-        auto wrapper = bp::make_const_aware(
-            %%auto_class<Persistence,noncopyable>%%
-        );
-        wrapper
-            .enable_shared_ptr()
-            .%%auto_method(unsafeRetrieve, bp::return_value_policy<bp::manage_new_object>())%%
-            .%%auto_members_regex(.*)%%
-            ;
-    }
-
-};
-
-void declare() {
-    PyDbAuth::declare();
-    PyLogicalLocation::declare();
-    PyStorage::declare();
-    PyDbStorage::declare();
-    PyDbTsvStorage::declare();
-    PyPersistence::declare();
+    
 }
-
-} // anonymous
-
-}}} // namespace lsst::daf::persistence
 
 BOOST_PYTHON_MODULE(_daf_persistence) {
     lsst::bputils::registerConversions();

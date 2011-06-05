@@ -12,6 +12,7 @@
 #include "boost/python/to_python/std_pair.hpp"
 #include "boost/python/from_python/std_pair.hpp"
 #include "boost/python/from_python/container.hpp"
+#include "boost/python/lookup_type.hpp"
 #include "lsst/bputils/exceptions.h"
 #include "lsst/bputils/conversions.h"
 

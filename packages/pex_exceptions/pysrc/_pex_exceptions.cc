@@ -3,6 +3,7 @@
 #include "lsst/pex/exceptions.h"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 namespace lsst { namespace pex { namespace exceptions {
 
@@ -37,7 +38,7 @@ void declareBaseException() {
         .def("clone", &Exception::clone,
              bp::return_value_policy<bp::manage_new_object>(), 
              "Deep-copy the exception.")
-        .def("getTraceback", &Exception::getTraceback, bp::return_value_policy<bp::copy_to_tuple>())
+        .def("getTraceback", &Exception::getTraceback, bp::return_value_policy<bpx::copy_to_tuple>())
         ;
     bputils::detail::addExceptionProxy("Exception", "Base LSST exception class", wrapper);
     bputils::detail::ExceptionConverter<Exception>();
@@ -66,7 +67,6 @@ void declareRuntimeExceptions() {
 }}} // namespace lsst::pex::exceptions
 
 BOOST_PYTHON_MODULE(_pex_exceptions) {
-    lsst::bputils::registerConversions();
     lsst::pex::exceptions::declareBaseException();
     lsst::pex::exceptions::declareRuntimeExceptions();
 }

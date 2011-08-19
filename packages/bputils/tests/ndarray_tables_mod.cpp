@@ -1,4 +1,4 @@
-#include <boost/python/ndarray/tables.hpp>
+#include <boost/python/extensions/ndarray/tables.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
 
@@ -7,6 +7,7 @@ static boost::uniform_int<> random_int(2, 5);
 
 namespace nt = lsst::ndarray::tables;
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 struct Tag {
     typedef boost::fusion::vector< nt::Field<int>, nt::Field<double,2>, nt::Field<float,1> > FieldSequence;
@@ -43,7 +44,7 @@ static bool compareTables(
 }
 
 BOOST_PYTHON_MODULE(ndarray_tables_mod) {
-    bp::numpy::initialize();
+    bpx::numpy::initialize();
     bp::def("makeLayout", &makeLayout, (bp::arg("b0"), bp::arg("b1"), bp::arg("c0"), bp::arg("pack")));
     bp::def("compareLayouts", &compareLayouts,
             (bp::arg("layout"), bp::arg("b0"), bp::arg("b1"), bp::arg("c0"), bp::arg("pack")));

@@ -1,12 +1,12 @@
-// Copyright 2010 Jim Bosch
+// Copyright 2010, 2011 Jim Bosch
 // Adapted from Boost.Python code, Copyright David Abrahams, 2002.
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/python.hpp>
-#include <boost/python/const_aware/proxy_class.hpp>
-#include <boost/python/const_aware/proxy_method.hpp>
+#include <boost/python/extensions/const_aware/proxy_class.hpp>
+#include <boost/python/extensions/const_aware/proxy_method.hpp>
 #include <structmember.h>
 
 #if PY_VERSION_HEX < 0x02060000
@@ -17,7 +17,7 @@
 
 // Most of this is copied with minor modifications from object/function.cpp in the main Boost.Python library.
 
-namespace boost { namespace python { namespace const_aware { 
+namespace boost { namespace python { namespace extensions { namespace const_aware_detail { 
 
 struct proxy_method {
     PyObject_HEAD
@@ -212,4 +212,4 @@ object make_new_proxy_property(object const & fget, char const * doc) {
     return result;
 }
 
-}}} // namespace boost::python::const_aware
+}}}} // namespace boost::python::extensions::const_aware_detail

@@ -1,9 +1,10 @@
 #include "lsst/bputils.h"
 #include "lsst/afw/coord.h"
-#include <boost/python/eigen.hpp>
-#include <boost/python/slice.hpp>
+#include "boost/python/extensions/eigen.hpp"
+#include "boost/python/slice.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 
@@ -49,7 +50,6 @@ namespace bp = boost::python;
 }
 
 BOOST_PYTHON_MODULE(_afw_coord) {
-    lsst::bputils::registerConversions();
     bp::import("lsst.afw.geom");
     bp::import("lsst.daf.base");
     lsst::afw::coord::declare();

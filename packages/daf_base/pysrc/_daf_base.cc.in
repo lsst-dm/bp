@@ -1,12 +1,25 @@
 #include "lsst/bputils.h"
+#include "lsst/bputils/containers.h"
 #include "lsst/daf/base.h"
 
 #include <sstream>
 #include "boost/scoped_ptr.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
+
+namespace boost { namespace python { namespace indexing {
+
+template <>
+struct value_traits<lsst::daf::base::DateTime> : public simple_value_traits<lsst::daf::base::DateTime>
+{
+    BOOST_STATIC_CONSTANT(bool, equality_comparable=false);
+    BOOST_STATIC_CONSTANT(bool, less_than_comparable=false);
+};
+
+}}}
 
 @Namespace(lsst::daf::base) {
 
@@ -85,7 +98,7 @@ namespace bp = boost::python;
     ) {
         
         template <typename T, typename Wrapper>
-            static void addAccessors(Wrapper & wrapper, std::string const & name) {
+        static void addAccessors(Wrapper & wrapper, std::string const & name) {
             typedef T (PropertySet::*DefaultGetter)(std::string const &, T const &) const;
             typedef T (PropertySet::*BasicGetter)(std::string const &) const;
             typedef void (PropertySet::*VectorAccessor)(std::string const &, std::vector<T> const &);
@@ -125,7 +138,7 @@ namespace bp = boost::python;
             wrapper.def(
                 ("getArray" + name).c_str(), &PropertySet::getArray<T>, 
                 (bp::arg("name"), bp::arg("value")), 
-                bp::return_value_policy<bp::copy_to_tuple>(),
+                bp::return_value_policy<bpx::copy_to_tuple>(),
                 @Doc(PropertySet::getArray)
             );
             wrapper.setattr(("TYPE_" + name).c_str(), typeid(T).name());
@@ -137,9 +150,9 @@ namespace bp = boost::python;
         
         @Customize {
             wrapper
-                .@Member(names, policies={bp::return_value_policy<bp::copy_to_list>()})
-                .@Member(paramNames, policies={bp::return_value_policy<bp::copy_to_list>()})
-                .@Member(propertySetNames, policies={bp::return_value_policy<bp::copy_to_list>()})
+                .@Member(names, policies={bp::return_value_policy<bpx::copy_to_list>()})
+                .@Member(paramNames, policies={bp::return_value_policy<bpx::copy_to_list>()})
+                .@Member(propertySetNames, policies={bp::return_value_policy<bpx::copy_to_list>()})
                 .@Member(typeOf, pointer={&typeOf})
                 ;
             addAccessors<bool>(wrapper, "Bool");
@@ -151,7 +164,6 @@ namespace bp = boost::python;
             addAccessors<double>(wrapper, "Double");
             addAccessors<std::string>(wrapper, "String");
             addAccessors<DateTime>(wrapper, "DateTime");
-            bp::container_from_python_sequence< std::vector<DateTime> >();
         }
 
     };
@@ -229,14 +241,14 @@ namespace bp = boost::python;
             );
             wrapper.def(
                 ("getArray" + name).c_str(), &PropertyList::getArray<T>, 
-                (bp::arg("name"), bp::arg("value")), bp::return_value_policy<bp::copy_to_tuple>(),
+                (bp::arg("name"), bp::arg("value")), bp::return_value_policy<bpx::copy_to_tuple>(),
                 @Doc(PropertyList::getArray)
             );
             wrapper.setattr(("TYPE_" + name).c_str(), typeid(T).name());
         }
 
         @Customize {
-            wrapper.@Member(getOrderedNames, policies={bp::return_value_policy<bp::copy_to_tuple>()});
+            wrapper.@Member(getOrderedNames, policies={bp::return_value_policy<bpx::copy_to_tuple>()});
             addAccessors<bool>(wrapper, "Bool");
             addAccessors<short>(wrapper, "Short");
             addAccessors<int>(wrapper, "Int");
@@ -250,21 +262,34 @@ namespace bp = boost::python;
 
     };
 
-void declare() {
-    PyCitizen::declare();
-    PyDateTime::declare();
-    PyPersistable::declare();
-    PyPropertySet::declare();
-    PyPropertyList::declare();
-    bputils::declareException< TypeMismatchException, pex::exceptions::LogicErrorException >(
-        "TypeMismatchException"
-    );
-}
+    template <typename T>
+    void declareContainers(std::string const & t) {
+        bputils::ContainerWrapper< std::vector<T> >::declare((t + "Vector").c_str());
+    }
+
+    void declare() {
+        PyCitizen::declare();
+        PyDateTime::declare();
+        PyPersistable::declare();
+        PyPropertySet::declare();
+        PyPropertyList::declare();
+        bputils::declareException< TypeMismatchException, pex::exceptions::LogicErrorException >(
+            "TypeMismatchException"
+        );
+        declareContainers<bool>("Bool");
+        declareContainers<short>("Short");
+        declareContainers<int>("Int");
+        declareContainers<long>("Long");
+        declareContainers<long long>("LongLong");
+        declareContainers<float>("Float");
+        declareContainers<double>("Double");
+        declareContainers<std::string>("String");
+        declareContainers<DateTime>("DateTime");
+    }
 
 }
 
 BOOST_PYTHON_MODULE(_daf_base) {
-    lsst::bputils::registerConversions();
     bp::import("lsst.pex.exceptions"); // need to import this so we can subclass LogicErrorException
     lsst::daf::base::declare();
 }

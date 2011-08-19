@@ -1,10 +1,11 @@
 #include "lsst/bputils.h"
 #include "lsst/afw/geom.h"
 #include "lsst/afw/geom/Angle.h"
-#include <boost/python/eigen.hpp>
-#include <boost/python/slice.hpp>
+#include "boost/python/extensions/eigen.hpp"
+#include "boost/python/slice.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 
@@ -146,8 +147,8 @@ namespace bp = boost::python;
             wrapper
                 .def(bp::self * bp::self)
                 .def(str(bp::self))
-                .@Member(getMatrix, policies={bp::return_internal_matrix<>()})
-                .@Member(getParameterVector, policies={bp::squeeze_matrix<>()})
+                .@Member(getMatrix, policies={bpx::return_internal_matrix<>()})
+                .@Member(getParameterVector, policies={bpx::squeeze_matrix<>()})
                 .def("__getitem__", &Py_getitem<LinearTransform,4,double>)
                 .def("__setitem__", &Py_setitem<LinearTransform,4,double>)
                 .def("__len__", &Py_len<LinearTransform,4>)
@@ -160,9 +161,9 @@ namespace bp = boost::python;
             wrapper
                 .def(bp::self * bp::self)
                 .def(str(bp::self))
-                .@Member(getParameterVector, policies={bp::squeeze_matrix<>()})
-                .@Member(getTranslation, policies={bp::const_aware::return_internal<>()})
-                .@Member(getLinear, policies={bp::const_aware::return_internal<>()})
+                .@Member(getParameterVector, policies={bpx::squeeze_matrix<>()})
+                .@Member(getTranslation, policies={bpx::return_internal<>()})
+                .@Member(getLinear, policies={bpx::return_internal<>()})
                 .def("__getitem__", &Py_getitem<AffineTransform,4,double>)
                 .def("__setitem__", &Py_setitem<AffineTransform,4,double>)
                 .def("__len__", &Py_len<AffineTransform,4>)
@@ -268,7 +269,6 @@ namespace bp = boost::python;
 }
 
 BOOST_PYTHON_MODULE(_afw_geom) {
-    lsst::bputils::registerConversions();
-    bp::numpy::initialize();
+    bpx::numpy::initialize();
     lsst::afw::geom::declare();
 }

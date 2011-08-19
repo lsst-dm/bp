@@ -1,11 +1,11 @@
-// Copyright 2010 Jim Bosch
+// Copyright 2010, 2011 Jim Bosch
 // Adapted from Boost.Python code, Copyright David Abrahams, 2002.
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/python.hpp>
-#include <boost/python/const_aware/proxy_class.hpp>
+#include <boost/python/extensions/const_aware/proxy_class.hpp>
 #include <structmember.h>
 
 #if PY_VERSION_HEX < 0x02060000
@@ -24,7 +24,7 @@ PyObject* static_data();
 
 } // namespace objects
 
-namespace const_aware { 
+namespace extensions { namespace const_aware_detail { 
 
 struct proxy_instance {
     PyObject_HEAD
@@ -396,4 +396,4 @@ PyObject * extract_proxy_target(PyObject * proxy) {
     return self->target;
 }
 
-}}} // namespace boost::python::const_aware
+}}}} // namespace boost::python::extensions::const_aware_detail

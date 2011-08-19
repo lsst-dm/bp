@@ -1,12 +1,12 @@
-#define BOOST_PYTHON_NUMPY_INTERNAL
-#include <boost/python/numpy/internal.hpp>
+#define BOOST_PYTHON_EXTENSIONS_NUMPY_INTERNAL
+#include <boost/python/extensions/numpy/internal.hpp>
 
 namespace boost { namespace python {
 namespace converter {
-NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyVoidArrType_Type, python::numpy::void_)
+NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyVoidArrType_Type, python::extensions::numpy::void_)
 } // namespace boost::python::converter
 
-namespace numpy {
+namespace extensions { namespace numpy {
 
 void_::void_(Py_ssize_t size) : 
     object(
@@ -32,4 +32,4 @@ void_ void_::copy() const {
     );
 }
 
-}}}
+}}}} // namespace boost::python::extensions::numpy

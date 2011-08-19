@@ -1,5 +1,5 @@
-#define BOOST_PYTHON_NUMPY_INTERNAL
-#include <boost/python/numpy/internal.hpp>
+#define BOOST_PYTHON_EXTENSIONS_NUMPY_INTERNAL
+#include <boost/python/extensions/numpy/internal.hpp>
 
 #define NUMPY_DTYPE_TRAITS_BUILTIN(ctype,code)                          \
     template <> struct dtype_traits<ctype> {                            \
@@ -31,10 +31,10 @@
 
 namespace boost { namespace python {
 namespace converter {
-NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyArrayDescr_Type, python::numpy::dtype)
+NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyArrayDescr_Type, python::extensions::numpy::dtype)
 } // namespace boost::python::converter
 
-namespace numpy {
+namespace extensions { namespace numpy {
 
 template <typename T> struct dtype_traits;
 
@@ -89,4 +89,4 @@ template <> struct dtype_traits<bool> {
 template dtype dtype::get_builtin<bool>();
 #endif
 
-}}} // namespace boost::python::numpy
+}}}} // namespace boost::python::extensions::numpy

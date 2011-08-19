@@ -1,5 +1,5 @@
 #include "lsst/bputils.h"
-#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/bputils/pickle.h"
 #include "lsst/afw/image/Calib.h"
 #include "lsst/afw/image/Filter.h"
 #include "lsst/afw/image/Wcs.h"
@@ -7,12 +7,13 @@
 #include "lsst/afw/image/Color.h"
 #include "lsst/afw/image/Defect.h"
 
-#include "boost/python/ndarray.hpp"
+#include "boost/python/extensions/ndarray.hpp"
 
 #include "lsst/afw/formatters/WcsFormatter.h"
 #include "lsst/afw/formatters/TanWcsFormatter.h"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 
@@ -40,7 +41,7 @@ namespace bp = boost::python;
                 .@Member(
                     getFilterProperty, policies={bp::return_value_policy< bp::reference_existing_object >()}
                 )
-                .@Member(getNames, policies={bp::return_value_policy< bp::copy_to_list >()})
+                .@Member(getNames, policies={bp::return_value_policy< bpx::copy_to_list >()})
                 ;
         }
     };
@@ -53,7 +54,7 @@ namespace bp = boost::python;
 
     @Class(DefectBase) {
         @Customize {
-            wrapper.@Member(getBBox, policies={bp::const_aware::return_internal<>()});
+            wrapper.@Member(getBBox, policies={bpx::return_internal<>()});
         }
     };
 
@@ -128,7 +129,6 @@ namespace bp = boost::python;
 }
 
 BOOST_PYTHON_MODULE(_afw_image) {
-    lsst::bputils::registerConversions();
     bp::numpy::initialize();
     bp::import("lsst.afw.geom");
     bp::import("lsst.afw.coord");

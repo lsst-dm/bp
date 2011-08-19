@@ -1,5 +1,5 @@
-#include <boost/python/ndarray.hpp>
-#include <boost/python/ndarray/eigen.hpp>
+#include <boost/python/extensions/ndarray.hpp>
+#include <boost/python/extensions/ndarray/eigen.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
 
@@ -116,7 +116,7 @@ lsst::ndarray::TransposedEigenView<T,N,C> returnTransposedEigenView() {
 }
 
 BOOST_PYTHON_MODULE(ndarray_mod) {
-    boost::python::numpy::initialize();
+    boost::python::extensions::numpy::initialize();
     boost::python::def("makeArray_d33", makeArray<double,3,3>);
     boost::python::def("returnArray_d11", returnArray<double,1,1>);
     boost::python::def("returnArray_d10", returnArray<double,1,0>);

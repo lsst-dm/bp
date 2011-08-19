@@ -269,7 +269,7 @@ class ScopeNode(CompoundNode):
             for node in iterable:
                 try:
                     del result[node.refid]
-                except ImportError:
+                except KeyError:
                     pass
         if include_regex:
             include_regex = re.compile(include_regex)
@@ -323,10 +323,10 @@ class ClassNode(ScopeNode):
         customized = processor.getActiveCustomizedSet()
         template = \
             "\n{indent1}static void declare({func_args}) {{\n"\
-            "{indent2}{bp}::{exposer}< {tbody} > {wrapper}{builder};\n"\
+            "{indent2}{bp}::class_< {tbody} > {wrapper}{builder};\n"\
             "{indent2}{bp}::scope in_{wrapper}({scope_arg});\n"\
             "{indent2}{lines};\n{indent1}}}"
-        v = {"bp": settings.bp, "indent": indent, "wrapper": wrapper}
+        v = {"bp": settings.bp, "bpx": settings.bpx, "indent": indent, "wrapper": wrapper}
         v["indent1"] = v["indent"] + (" " * settings.indent)
         v["indent2"] = v["indent1"] + (" " * settings.indent)
         v["indent3"] = v["indent2"] + (" " * settings.indent)
@@ -335,20 +335,20 @@ class ClassNode(ScopeNode):
             v["bases"] = list(processor.formatNode(base, tparams=tparams) for base, tparams in self.bases)
             bases = ", ".join(v["bases"])
         lines = []
-        tbody = [name]
+        tbody = []
         v["name"] = name
-        if bases: tbody.append("{bp}::bases< {0} >".format(bases, **v))
-        if noncopyable: tbody.append("boost::noncopyable")
         if const_aware:
-            v["exposer"] = "const_aware::exposer"
+            tbody.append("{bpx}::const_aware< {name} >".format(**v))
             v["scope_arg"] = "{wrapper}.main_class()".format(**v)
             if enable_shared_ptr:
                 lines.append("{wrapper}.enable_shared_ptr()".format(**v))
         else:
-            v["exposer"] = "class_"
+            tbody.append(name)
             v["scope_arg"] = wrapper
             if enable_shared_ptr:
                 lines.append("{bp}::register_ptr_to_python< boost::shared_ptr< {name} > >()".format(**v))
+        if bases: tbody.append("{bp}::bases< {0} >".format(bases, **v))
+        if noncopyable: tbody.append("boost::noncopyable")
         v["tbody"] = ", ".join(tbody)
         if doc is None: doc = processor.formatDocumentation(self, indent=v['indent3'])
         if builder is None:
@@ -517,8 +517,8 @@ class TypeDefNode(MemberNode):
         else:
             head = wrapper + ".add_static_property"
         name = processor.formatNode(self)
-        template = '{head}("{pyname}", &{bp}::lookup_type< {name} >)'
-        return template.format(bp=settings.bp, head=head, pyname=pyname, name=name)
+        template = '{head}("{pyname}", &{bpx}::lookup_type< {name} >)'
+        return template.format(bp=settings.bp, bpx=settings.bpx, head=head, pyname=pyname, name=name)
 
 _kind_to_class["typedef"] = TypeDefNode
 
@@ -546,13 +546,13 @@ class VariableNode(MemberNode):
         else:
             head = wrapper + ".def"
         if self.is_static:
-            template = '{head}({bp}::const_aware::data_member("{pyname}", &{name}))'
+            template = '{head}({bpx}::data_member("{pyname}", &{name}))'
         else:
-            template = '{head}(\n{indent1}{bp}::const_aware::data_member(\n' \
+            template = '{head}(\n{indent1}{bpx}::data_member(\n' \
                 '{indent2}"{pyname}",\n{indent2}&{name},\n' \
                 '{indent2}{doc}\n{indent1})\n{indent0})'
         return template.format(
-            bp=settings.bp, head=head, indent0=indent, indent1=indent1, indent2=indent2, 
+            bp=settings.bp, bpx=settings.bpx, head=head, indent0=indent, indent1=indent1, indent2=indent2, 
             pyname=pyname, name=name
             )
 

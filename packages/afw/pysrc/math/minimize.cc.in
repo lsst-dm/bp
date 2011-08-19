@@ -1,8 +1,9 @@
 #include "lsst/bputils.h"
 #include "lsst/afw/math/minimize.h"
-#include "boost/python/to_python/implicit.hpp"
+#include "boost/python/extensions/implicit.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Namespace(lsst::afw::math) {
 
@@ -46,7 +47,7 @@ namespace bp = boost::python;
             .def_readwrite("parameterList", &PyFitResults::parameterList)
             .def_readwrite("parameterErrorList", &PyFitResults::parameterErrorList)
             ;
-        bp::implicit_to_python<FitResults,PyFitResults>();
+        bpx::implicit_to_python<FitResults,PyFitResults>();
         declareMinimizeT<float>();
         declareMinimizeT<double>();
     }

@@ -1,8 +1,9 @@
 #include "lsst/bputils.h"
 #include "lsst/afw/geom/ellipses.h"
-#include <boost/python/eigen.hpp>
+#include "boost/python/extensions/eigen.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 
@@ -15,7 +16,7 @@ namespace bp = boost::python;
     0, 1, 
         bp::with_custodian_and_ward_postcall< 0 , 2 > 
         > HelperPolicies;
-    typedef bp::as_const<HelperPolicies> ConstHelperPolicies;
+    typedef bpx::as_const<HelperPolicies> ConstHelperPolicies;
 
     @Class(
         BaseCore,
@@ -28,14 +29,14 @@ namespace bp = boost::python;
         }
         
         @Customize {
-            bp::make_const_aware(bp::class_<BaseCore::Transformer>("Transformer", bp::no_init))
+            bp::class_< bpx::const_aware<BaseCore::Transformer> >("Transformer", bp::no_init)
                 .def("copy", &BaseCore::Transformer::copy)
                 .def("inPlace", &BaseCore::Transformer::inPlace)
                 .def("apply", &BaseCore::Transformer::apply)
                 .def("d", &BaseCore::Transformer::d)
                 .def("dTransform", &BaseCore::Transformer::dTransform)
                 ;
-            bp::make_const_aware(bp::class_<BaseCore::Convolution>("Convolution", bp::no_init))
+            bp::class_< bpx::const_aware<BaseCore::Convolution> >("Convolution", bp::no_init)
                 .def("copy", &BaseCore::Convolution::copy)
                 .def("inPlace", &BaseCore::Convolution::inPlace)
                 .def("apply", &BaseCore::Convolution::apply)
@@ -44,7 +45,7 @@ namespace bp = boost::python;
             wrapper
                 .def(bp::self == bp::self)
                 .def(bp::self != bp::self)
-                .@Member(getParameterVector, policies={bp::squeeze_matrix<>()})
+                .@Member(getParameterVector, policies={bpx::squeeze_matrix<>()})
                 .@Member(transform[const], policies={ConstHelperPolicies()})
                 .@Member(transform[nonconst], policies={HelperPolicies()})
                 .@Member(convolve[const], policies={ConstHelperPolicies()})
@@ -55,10 +56,7 @@ namespace bp = boost::python;
 
     };
 
-    @Class(
-        Ellipse,
-        exclude_list=[readParameters, writeParameters, getCore]
-    ) {
+    @Class(Ellipse, exclude_list=[readParameters, writeParameters, getCore]) {
 
         typedef Ellipse::Envelope Envelope;
 
@@ -67,13 +65,13 @@ namespace bp = boost::python;
         }
 
         @Customize {
-            bp::make_const_aware(bp::class_<Ellipse::Transformer>("Transformer", bp::no_init))
+            bp::class_< bpx::const_aware<Ellipse::Transformer> >("Transformer", bp::no_init)
                 .def("copy", &Ellipse::Transformer::copy)
                 .def("inPlace", &Ellipse::Transformer::inPlace)
                 .def("d", &Ellipse::Transformer::d)
                 .def("dTransform", &Ellipse::Transformer::dTransform)
                 ;
-            bp::make_const_aware(bp::class_<Ellipse::Convolution>("Convolution", bp::no_init))
+            bp::class_< bpx::const_aware<Ellipse::Convolution> >("Convolution", bp::no_init)
                 .def("copy", &Ellipse::Convolution::copy)
                 .def("inPlace", &Ellipse::Convolution::inPlace)
                 .def("d", &Ellipse::Convolution::d)
@@ -81,12 +79,12 @@ namespace bp = boost::python;
             wrapper
                 .def(bp::self == bp::self)
                 .def(bp::self != bp::self)
-                .@Member(getParameterVector, policies={bp::squeeze_matrix<>()})
+                .@Member(getParameterVector, policies={bpx::squeeze_matrix<>()})
                 .@Member(transform[const], policies={ConstHelperPolicies()})
                 .@Member(transform[nonconst], policies={HelperPolicies()})
                 .@Member(convolve[const], policies={ConstHelperPolicies()})
                 .@Member(convolve[nonconst], policies={HelperPolicies()})
-                .@Member(getCenter, policies={bp::const_aware::return_internal<>()})
+                .@Member(getCenter, policies={bpx::return_internal<>()})
                 .@Member(getCorePtr, pyname="getCore")
                 .@Member(getGridTransform, pointer={&getGridTransform})
                 ;
@@ -97,7 +95,7 @@ namespace bp = boost::python;
 
     @Class(Quadrupole, exclude_list=[readParameters, writeParameters]) {
         @Customize {
-            wrapper.@Member(getMatrix, policies={bp::return_internal_matrix<>()});
+            wrapper.@Member(getMatrix, policies={bpx::return_internal_matrix<>()});
         }
     };
 
@@ -130,9 +128,7 @@ namespace bp = boost::python;
         static void set(T & self, double value) { self = value; }
         
         static void declare(char const * name) {
-            bp::const_aware::exposer<T>(
-                name, bp::init<double>(bp::arg("value")=double(T()))
-            )
+            bp::class_< bpx::const_aware<T> >(name, bp::init<double>(bp::arg("value")=double(T())))
                 .def(float_(bp::self))
                 .def(str(bp::self))
                 .enable_shared_ptr()
@@ -156,8 +152,8 @@ namespace bp = boost::python;
         }
         @Customize {
             wrapper
-                .@Member(getRadius, policies={bp::const_aware::return_internal<>()})
-                .@Member(getEllipticity, policies={bp::const_aware::return_internal<>()})
+                .@Member(getRadius, policies={bpx::return_internal<>()})
+                .@Member(getEllipticity, policies={bpx::return_internal<>()})
                 .def("setEllipticity", &setEllipticity)
                 ;
         }
@@ -196,8 +192,7 @@ namespace bp = boost::python;
 }
 
 BOOST_PYTHON_MODULE(_afw_geom_ellipses) {
-    lsst::bputils::registerConversions();
-    bp::numpy::initialize();
+    bpx::numpy::initialize();
     bp::import("lsst.afw.geom");
     lsst::afw::geom::ellipses::declare();
 }

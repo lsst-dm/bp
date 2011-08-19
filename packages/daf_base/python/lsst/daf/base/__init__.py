@@ -2,7 +2,7 @@ from . import _daf_base
 import lsst.bputils
 import lsst.pex.exceptions
 
-lsst.bputils.rescope(_daf_base, globals(), names=("Citizen", "DateTime", "Persistable"))
+lsst.bputils.rescope(_daf_base, globals(), ignore=())
 
 @lsst.bputils.extend(_daf_base.PropertySet)
 class PropertySet:

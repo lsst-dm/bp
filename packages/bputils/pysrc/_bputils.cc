@@ -1,9 +1,11 @@
 #include "lsst/bputils.h"
+#include "boost/python/extensions/filesystem.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 namespace {
 
@@ -17,7 +19,7 @@ struct Py_ostream {
         bp::class_<std::ostream,boost::noncopyable> wrapper("ostream", bp::no_init);
         wrapper
             .def("write", &write)
-            .def("flush", &std::ostream::flush, bp::return_none<>())
+            .def("flush", &std::ostream::flush, bpx::return_none<>())
             ;
         bp::register_ptr_to_python< boost::shared_ptr<std::ostream> >();
     }
@@ -57,7 +59,7 @@ struct Py_ofstream {
                 ),
                 "Construct an ofstream from a filename and mode (one of 'w', 'a', 'wb', and 'ab')."
             )
-            .def("close", &std::ofstream::close, bp::return_none<>())
+            .def("close", &std::ofstream::close, bpx::return_none<>())
             ;
         bp::register_ptr_to_python< boost::shared_ptr<std::ofstream> >();
     }
@@ -66,7 +68,7 @@ struct Py_ofstream {
 
 struct Py_ostringstream {
 
-        static void declare() {
+    static void declare() {
         bp::class_<std::ostringstream,bp::bases<std::ostream>,boost::noncopyable> 
             wrapper("ostringstream", bp::init<>());
         wrapper
@@ -85,7 +87,8 @@ std::ostream & _get_cerr() { return std::cerr; }
 } // anonymous
 
 BOOST_PYTHON_MODULE(_bputils) {
-    lsst::bputils::registerConversions();
+    bpx::filesystem_path_to_python();
+    bpx::filesystem_path_from_python_str();
     Py_ostream::declare();
     Py_ofstream::declare();
     Py_ostringstream::declare();

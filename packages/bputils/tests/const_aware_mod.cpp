@@ -1,10 +1,13 @@
 #include "boost/python.hpp"
-#include "boost/python/const_aware.hpp"
-#include "boost/python/lookup_type.hpp"
-#include "boost/python/to_python/const_reference_defaults.hpp"
+#include "boost/python/extensions/const_aware.hpp"
+#include "boost/python/extensions/lookup_type.hpp"
+#include "boost/python/extensions/container_from_python.hpp"
+#include "boost/python/extensions/const_reference_defaults.hpp"
 #include "boost/shared_ptr.hpp"
+#include "indexing_suite/vector.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 class Example {
 public:
@@ -136,7 +139,7 @@ float const Owner::static_const_value = 3.0;
 
 static void export_module() {
 
-    bp::const_aware::exposer<Example>("Example")
+    bp::class_< bpx::const_aware<Example> >("Example")
         .def(bp::init<Example const &>())
         .add_property("address", &Example::get_address)
         .def("non_const_method", &Example::non_const_method)
@@ -146,8 +149,8 @@ static void export_module() {
         .def_readwrite("value_rw", &Example::value)
         .enable_shared_ptr()
         .enable_pickling()
-        .def(bp::const_aware::data_member("static_value", &Example::static_value))
-        .def(bp::const_aware::data_member("static_const_value", &Example::static_const_value))
+        .def(bpx::data_member("static_value", &Example::static_value))
+        .def(bpx::data_member("static_const_value", &Example::static_const_value))
         .def("compare_static_value", &Example::compare_static_value)
         .staticmethod("compare_static_value")
         .def(bp::init<int>((bp::arg("value")=0)))
@@ -160,23 +163,23 @@ static void export_module() {
         .def(bp::self += int())
         ;
 
-    bp::const_aware::exposer<ConstAwareOwner>("ConstAwareOwner")
-        .def(bp::const_aware::data_member("value_member", &ConstAwareOwner::value_member))
-        .def(bp::const_aware::data_member("const_value_member", &ConstAwareOwner::const_value_member))
-        .def(bp::const_aware::data_member("example_member", &ConstAwareOwner::example_member))
-        .def(bp::const_aware::data_member("const_example_member", &ConstAwareOwner::const_example_member))
-        .def(bp::const_aware::data_member("example_ptr_member", &ConstAwareOwner::example_ptr_member))
-        .def(bp::const_aware::data_member("example_const_ptr_member", &ConstAwareOwner::example_const_ptr_member))
-        .def(bp::const_aware::data_member("const_example_ptr_member", &ConstAwareOwner::const_example_ptr_member))
-        .def(bp::const_aware::data_member("const_example_const_ptr_member", &ConstAwareOwner::const_example_const_ptr_member))
+    bp::class_< bpx::const_aware<ConstAwareOwner> >("ConstAwareOwner")
+        .def(bpx::data_member("value_member", &ConstAwareOwner::value_member))
+        .def(bpx::data_member("const_value_member", &ConstAwareOwner::const_value_member))
+        .def(bpx::data_member("example_member", &ConstAwareOwner::example_member))
+        .def(bpx::data_member("const_example_member", &ConstAwareOwner::const_example_member))
+        .def(bpx::data_member("example_ptr_member", &ConstAwareOwner::example_ptr_member))
+        .def(bpx::data_member("example_const_ptr_member", &ConstAwareOwner::example_const_ptr_member))
+        .def(bpx::data_member("const_example_ptr_member", &ConstAwareOwner::const_example_ptr_member))
+        .def(bpx::data_member("const_example_const_ptr_member", &ConstAwareOwner::const_example_const_ptr_member))
         ;
 
     bp::class_<Owner>("Owner")
-        .add_static_property("Ex", &bp::lookup_type<Example>)
+        .add_static_property("Ex", &bpx::lookup_type<Example>)
         .def("by_value", &Owner::by_value)
-        .def("by_const_value", &Owner::by_const_value, bp::as_const<>())
-        .def("by_reference", &Owner::by_reference, bp::const_aware::return_internal<>())
-        .def("by_const_reference", &Owner::by_const_reference, bp::const_aware::return_internal<>())
+        .def("by_const_value", &Owner::by_const_value, bpx::as_const<>())
+        .def("by_reference", &Owner::by_reference, bpx::return_internal<>())
+        .def("by_const_reference", &Owner::by_const_reference, bpx::return_internal<>())
         .def("by_shared_ptr", &Owner::by_shared_ptr)
         .def("by_const_shared_ptr", &Owner::by_const_shared_ptr)
         .def("accept_by_value", &Owner::accept_by_value)
@@ -185,19 +188,26 @@ static void export_module() {
         .def("accept_by_const_reference", &Owner::accept_by_const_reference)
         .def("accept_by_shared_ptr", &Owner::accept_by_shared_ptr)
         .def("accept_by_const_shared_ptr", &Owner::accept_by_const_shared_ptr)
-        .def(bp::const_aware::data_member("static_value", &Owner::static_value))
-        .def(bp::const_aware::data_member("static_const_value", &Owner::static_const_value))
+        .def(bpx::data_member("static_value", &Owner::static_value))
+        .def(bpx::data_member("static_const_value", &Owner::static_const_value))
         .def("compare_static_value", &Owner::compare_static_value)
         .staticmethod("compare_static_value")
-        .def(bp::const_aware::data_member("value_member", &Owner::value_member))
-        .def(bp::const_aware::data_member("const_value_member", &Owner::const_value_member))
-        .def(bp::const_aware::data_member("example_member", &Owner::example_member))
-        .def(bp::const_aware::data_member("const_example_member", &Owner::const_example_member))
-        .def(bp::const_aware::data_member("example_ptr_member", &Owner::example_ptr_member))
-        .def(bp::const_aware::data_member("example_const_ptr_member", &Owner::example_const_ptr_member))
-        .def(bp::const_aware::data_member("const_example_ptr_member", &Owner::const_example_ptr_member))
-        .def(bp::const_aware::data_member("const_example_const_ptr_member", &Owner::const_example_const_ptr_member))
+        .def(bpx::data_member("value_member", &Owner::value_member))
+        .def(bpx::data_member("const_value_member", &Owner::const_value_member))
+        .def(bpx::data_member("example_member", &Owner::example_member))
+        .def(bpx::data_member("const_example_member", &Owner::const_example_member))
+        .def(bpx::data_member("example_ptr_member", &Owner::example_ptr_member))
+        .def(bpx::data_member("example_const_ptr_member", &Owner::example_const_ptr_member))
+        .def(bpx::data_member("const_example_ptr_member", &Owner::const_example_ptr_member))
+        .def(bpx::data_member("const_example_const_ptr_member", &Owner::const_example_const_ptr_member))
         ;
+
+    bp::class_< bpx::const_aware< std::vector<int> > >("IntVector")
+        .def(bp::init< std::vector<int> const & >())
+        .def(bp::indexing::vector_suite< std::vector<int> const >())
+        .main_class().def(bp::indexing::vector_suite< std::vector<int> >())
+        ;
+    bpx::container_from_python_sequence< std::vector<int> >();
 
 }
 

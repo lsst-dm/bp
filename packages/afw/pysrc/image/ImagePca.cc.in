@@ -4,6 +4,7 @@
 #include "lsst/afw/image/MaskedImage.h"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Namespace(lsst::afw::image) {
 
@@ -12,7 +13,7 @@ namespace bp = boost::python;
         @Customize {
             wrapper.@MemberList(
                 [getImageList, getEigenImages, getEigenValues],
-                policies={bp::return_value_policy< bp::copy_to_list >()}
+                policies={bp::return_value_policy< bpx::copy_to_list >()}
             );
         }
     };

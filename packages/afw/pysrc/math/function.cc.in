@@ -5,6 +5,7 @@
 #include "boost/python/ndarray.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 
@@ -15,7 +16,7 @@ struct FunctionTemplates {
 
     @TemplateClass(Function, tparams={<ReturnT>}, noncopyable=True, exclude_list=[Function]) {
         @Customize {
-            wrapper.@Member(getParameters, policies={bp::return_value_policy<bp::copy_to_tuple>()});
+            wrapper.@Member(getParameters, policies={bp::return_value_policy<bpx::copy_to_tuple>()});
         }
     };
 
@@ -29,7 +30,7 @@ struct FunctionTemplates {
     @TemplateClass(Function2, tparams={<ReturnT>}, noncopyable=True, exclude_list=[Function2]) {
         typedef typename Function2<ReturnT>::Ptr Ptr;
         @Customize {
-            wrapper.@Member(getDFuncDParameters, policies={bp::return_value_policy<bp::copy_to_tuple>()});
+            wrapper.@Member(getDFuncDParameters, policies={bp::return_value_policy<bpx::copy_to_tuple>()});
             wrapper.def("__call__", &Function2<ReturnT>::operator());
         }
     };

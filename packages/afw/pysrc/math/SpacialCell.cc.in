@@ -1,25 +1,13 @@
 #include "lsst/bputils.h"
+#include "lsst/bputils/containers.h"
 #include "lsst/afw/math/SpatialCell.h"
 #include "lsst/afw/image/Image.h"
 #include "lsst/afw/image/MaskedImage.h"
 
-#include "indexing_suite/vector.hpp"
-
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
-
-namespace boost { namespace python { namespace indexing {
-
-template <>
-struct value_traits< lsst::afw::math::SpatialCell::Ptr > 
-    : public simple_value_traits< lsst::afw::math::SpatialCell::Ptr >
-{
-    BOOST_STATIC_CONSTANT(bool, equality_comparable = false);
-    BOOST_STATIC_CONSTANT(bool, less_than_comparable = false);
-};
-
-}}}
 
 @Namespace(lsst::afw::math) {
 
@@ -39,7 +27,7 @@ struct value_traits< lsst::afw::math::SpatialCell::Ptr >
 
     @Class(SpatialCell, exclude_list=[SpatialCell, begin, end, CandidateList]) {
         @Customize {
-            bp::container_from_python_sequence< SpatialCell::CandidateList >();
+            bputils::PyContainer<SpatialCell::CandidateList>::declare("CandidateList");
             wrapper.@Member(getBBox, policies={bp::return_value_policy<bp::copy_const_reference>()});
             wrapper.@Member(
                 SpatialCell, 
@@ -51,10 +39,8 @@ struct value_traits< lsst::afw::math::SpatialCell::Ptr >
 
     @Class(SpatialCellSet, exclude_list=[CellList]) {
         @Customize {
-            bp::class_< SpatialCellSet::CellList >("CellList")
-                .def(bp::indexing::vector_suite< SpatialCellSet::CellList >())
-                ;
-            wrapper.@Member(getCellList, policies={bp::const_aware::return_internal<>()});
+            bputils::PyContainer<SpatialCellSet::CellList>::declare("CellList");
+            wrapper.@Member(getCellList, policies={bpx::return_internal<>()});
         }
     };
 

@@ -1,5 +1,6 @@
 #include "lsst/bputils.h"
-#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/bputils/containers.h"
+#include "lsst/bputils/pickle.h"
 #include "lsst/afw/cameraGeom/Id.h"
 #include "lsst/afw/cameraGeom/Orientation.h"
 #include "lsst/afw/cameraGeom/Detector.h"
@@ -11,25 +12,12 @@
 #include "lsst/afw/image/Image.h"
 #include "lsst/afw/image/Mask.h"
 
-#include "boost/python/ndarray.hpp"
-
-#include "indexing_suite/vector.hpp"
+#include "boost/python/extensions/ndarray.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
-
-namespace boost { namespace python { namespace indexing {
-
-template <>
-struct value_traits< lsst::afw::image::DefectBase::Ptr > 
-    : public simple_value_traits< lsst::afw::image::DefectBase::Ptr >
-{
-    BOOST_STATIC_CONSTANT(bool, equality_comparable = false);
-    BOOST_STATIC_CONSTANT(bool, less_than_comparable = false);
-};
-
-}}}
 
 @Namespace(lsst::afw::cameraGeom) {
 
@@ -39,15 +27,13 @@ struct value_traits< lsst::afw::image::DefectBase::Ptr >
 
     @Class(Detector, bases={lsst::daf::base::Citizen}) {
         @Customize {
-            bp::class_< std::vector< image::DefectBase::Ptr > >("DefectList")
-                .def(bp::indexing::vector_suite< std::vector< image::DefectBase::Ptr > >())
-                ;
+            bputils::PyContainer< std::vector< image::DefectBase::Ptr > >::declare("DefectList");
             wrapper.def(bp::self == bp::self);
             wrapper.def(bp::self < bp::self);
-            wrapper.@Member(getAllPixels, policies={bp::const_aware::return_internal<>()});
-            wrapper.@Member(getOrientation, policies={bp::const_aware::return_internal<>()});
-            wrapper.@Member(getDefects[const], policies={bp::return_value_policy<bp::copy_to_tuple>()});
-            wrapper.@Member(getDefects[nonconst], policies={bp::const_aware::return_internal<>()});
+            wrapper.@Member(getAllPixels, policies={bpx::return_internal<>()});
+            wrapper.@Member(getOrientation, policies={bpx::return_internal<>()});
+            wrapper.@Member(getDefects[const], policies={bp::return_value_policy<bpx::copy_to_tuple>()});
+            wrapper.@Member(getDefects[nonconst], policies={bpx::return_internal<>()});
         }
     };
 
@@ -62,7 +48,7 @@ struct value_traits< lsst::afw::image::DefectBase::Ptr >
             );
         }
         @Customize {
-            wrapper.@Member(getDataSec[nonconst], policies={bp::const_aware::return_internal<>()});
+            wrapper.@Member(getDataSec[nonconst], policies={bpx::return_internal<>()});
             declareTemplates< image::Image<boost::uint16_t> >(wrapper);
             declareTemplates< image::Image<int> >(wrapper);
             declareTemplates< image::Image<float> >(wrapper);
@@ -106,7 +92,7 @@ struct value_traits< lsst::afw::image::DefectBase::Ptr >
 }
 
 BOOST_PYTHON_MODULE(_afw_cameraGeom) {
-    lsst::bputils::registerConversions();
-    bp::numpy::initialize();
+    bpx::numpy::initialize();
+    bp::import("lsst.afw.image");
     lsst::afw::cameraGeom::declare();
 }

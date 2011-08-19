@@ -48,6 +48,8 @@ namespace boost { namespace python { namespace indexing {
   };
 
   // Implementation using pointer indirection
+  // By default this isn't used, because if you put something in a shared_ptr,
+  // more often than not it's not less_than_comparable or equality_comparable.
   template <typename Ptr>
   struct indirect_value_traits : simple_value_traits<Ptr> {
     // Hide the base class versions of the comparisons, using these
@@ -72,14 +74,6 @@ namespace boost { namespace python { namespace indexing {
   {
   };
 
-#if !defined (BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
-  // Partial specialization for instances of boost::shared_ptr
-  template<typename T>
-  struct value_traits< ::boost::shared_ptr<T> >
-    : indirect_value_traits< ::boost::shared_ptr<T> >
-  {
-  };
-#endif
 } } }
 
 #endif // BOOST_PYTHON_INDEXING_VALUE_TRAITS_HPP

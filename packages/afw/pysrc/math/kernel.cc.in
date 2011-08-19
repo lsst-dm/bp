@@ -1,14 +1,15 @@
 #include "lsst/bputils.h"
-#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/bputils/containers.h"
+#include "lsst/bputils/pickle.h"
 #include "lsst/afw/math/Kernel.h"
 #include "lsst/afw/math/KernelFunctions.h"
 #include "lsst/afw/math/ConvolveImage.h"
 #include "lsst/afw/formatters/KernelFormatter.h"
 
-#include "indexing_suite/vector.hpp"
 #include "boost/python/ndarray.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 
@@ -18,9 +19,7 @@ namespace bp = boost::python;
 
     @Class(Kernel, noncopyable=True, exclude_list=[Kernel, Pixel, kernel_fill_factor]) {
         @Customize {
-            bp::class_< std::vector<double> >("ParameterVector")
-                .def(bp::indexing::vector_suite< std::vector<double> >())
-                ;
+            bputils::PyContainer< std::vector<double> >::declare("ParameterVector");
         }
     };
 
@@ -41,7 +40,7 @@ namespace bp = boost::python;
     };
     @Class(LinearCombinationKernel, noncopyable=True) {
         @Customize {
-            wrapper.@Member(getKernelList, policies={bp::return_value_policy<bp::copy_to_tuple>()});
+            wrapper.@Member(getKernelList, policies={bp::return_value_policy<bpx::copy_to_tuple>()});
             bputils::BoostPickleInterface<LinearCombinationKernel>::apply(wrapper);
         }
     };

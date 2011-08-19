@@ -1,24 +1,23 @@
-#define BOOST_PYTHON_NUMPY_INTERNAL
-#include <boost/python/numpy/internal.hpp>
-#include <boost/python/numpy/matrix.hpp>
+#define BOOST_PYTHON_EXTENSIONS_NUMPY_INTERNAL
+#include <boost/python/extensions/numpy/internal.hpp>
+#include <boost/python/extensions/numpy/matrix.hpp>
 
-namespace boost { namespace python {
-namespace numpy { namespace detail {
+namespace boost { namespace python { namespace extensions { namespace numpy { namespace detail {
 inline object get_matrix_type() {
     object module = import("numpy");
     return module.attr("matrix");
 }
-}} // namespace numpy::detail
+}}} // namespace extentions::numpy::detail
 
 namespace converter {
 
-PyTypeObject const * object_manager_traits<numpy::matrix>::get_pytype() {
-    return reinterpret_cast<PyTypeObject*>(numpy::detail::get_matrix_type().ptr());
+PyTypeObject const * object_manager_traits<extensions::numpy::matrix>::get_pytype() {
+    return reinterpret_cast<PyTypeObject*>(extensions::numpy::detail::get_matrix_type().ptr());
 }
 
 } // namespace boost::python::converter
 
-namespace numpy {
+namespace extensions { namespace numpy {
 
 object matrix::construct(object const & obj, dtype const & dt, bool copy) {
     return numpy::detail::get_matrix_type()(obj, dt, copy);
@@ -48,4 +47,4 @@ matrix matrix::transpose() const {
     return matrix(extract<matrix>(ndarray::transpose()));
 }
 
-}}} // namespace boost::python::numpy
+}}}} // namespace boost::python::extensions::numpy

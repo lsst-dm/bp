@@ -1,9 +1,9 @@
-#include <boost/python.hpp>
-#include "boost/python/const_aware.hpp"
+#include "lsst/bputils.h"
 
 #include "lsst/security/Security.h"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 

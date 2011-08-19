@@ -1,14 +1,12 @@
-#define BOOST_PYTHON_NUMPY_INTERNAL
-#include <boost/python/numpy/internal.hpp>
+#define BOOST_PYTHON_EXTENSIONS_NUMPY_INTERNAL
+#include <boost/python/extensions/numpy/internal.hpp>
 
 namespace boost { namespace python {
 namespace converter {
-NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyArray_Type, python::numpy::ndarray)
+NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyArray_Type, python::extensions::numpy::ndarray)
 } // namespace boost::python::converter
 
-namespace numpy {
-
-namespace detail {
+namespace extensions { namespace numpy { namespace detail {
 
 ndarray::bitflag numpy_to_bitflag(int const f) {
     ndarray::bitflag r = ndarray::NONE;
@@ -282,4 +280,4 @@ ndarray from_object(object const & obj, int nd_min, int nd_max, ndarray::bitflag
     );
 }
 
-}}}
+}}}} // namespace boost::python::extensions::numpy

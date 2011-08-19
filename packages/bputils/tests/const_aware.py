@@ -195,5 +195,45 @@ class TestConstAware(unittest.TestCase):
         self.assertEqual(proxy_loaded.value_prop, proxy.value_prop)
         self.checkNonConst(proxy_loaded)
 
+class TestIntVector(unittest.TestCase):
+
+    def setUp(self):
+        self.list = range(3, 8)
+        self.vector = const_aware_mod.IntVector(self.list)
+        self.const_vector = const_aware_mod.IntVector.__const_proxy__(self.vector)
+
+    def checkCommon(self, vector):
+        self.assertEqual(self.list, list(vector))
+        for n in range(len(vector)):
+            self.assertEqual(self.list[n], vector[n])
+        self.assertEqual(self.list.count(4), vector.count(4))
+        self.assertEqual(self.list.index(4), vector.index(4))
+
+    def testConst(self):
+        self.checkCommon(self.const_vector)
+        self.assertFalse(hasattr(self.const_vector, "append"))
+        self.assertFalse(hasattr(self.const_vector, "extend"))
+        self.assertFalse(hasattr(self.const_vector, "sort"))
+        self.assertFalse(hasattr(self.const_vector, "reverse"))
+
+    def testNonConst(self):
+        self.checkCommon(self.vector)
+        self.vector.append(0)
+        self.list.append(0)
+        self.assertEqual(self.list, list(self.vector))
+        self.assertEqual(self.list, list(self.const_vector))
+        self.vector.extend([0, 1])
+        self.list.extend([0, 1])
+        self.assertEqual(self.list, list(self.vector))
+        self.assertEqual(self.list, list(self.const_vector))
+        self.vector.sort()
+        self.list.sort()
+        self.assertEqual(self.list, list(self.vector))
+        self.assertEqual(self.list, list(self.const_vector))
+        self.vector.reverse()
+        self.list.reverse()
+        self.assertEqual(self.list, list(self.vector))
+        self.assertEqual(self.list, list(self.const_vector))
+
 if __name__=="__main__":
     unittest.main()

@@ -1,4 +1,4 @@
-#include "boost/python/ndarray.hpp"
+#include "boost/python/extensions/ndarray.hpp"
 
 namespace bp = boost::python;
 

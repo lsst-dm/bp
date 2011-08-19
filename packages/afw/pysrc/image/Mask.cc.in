@@ -1,13 +1,13 @@
 #include "lsst/bputils.h"
-#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/bputils/containers.h"
+#include "lsst/bputils/pickle.h"
 #include "lsst/afw/image/Mask.h"
 #include "lsst/afw/formatters/MaskFormatter.h"
 
-#include "boost/python/ndarray.hpp"
-
-#include "indexing_suite/map.hpp"
+#include "boost/python/extensions/ndarray.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Namespace(lsst::afw::image) {
 
@@ -52,9 +52,7 @@ namespace bp = boost::python;
 
 @Namespace(lsst::afw::image, anonymous=False) {
     void declareMask() {
-        bp::class_< std::map<std::string, int> >("MaskPlaneDict")
-            .def(bp::indexing::map_suite< std::map<std::string,int> >())
-            ;
+        bputils::PyContainer< std::map<std::string, int> >::declare("MaskPlaneDict");
         PyMask< MaskPixel >::declare("MaskU");
     }
 }

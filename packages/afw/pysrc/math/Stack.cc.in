@@ -1,49 +1,25 @@
 #include "lsst/bputils.h"
+#include "lsst/bputils/containers.h"
 #include "lsst/afw/math/Stack.h"
 
-#include "indexing_suite/vector.hpp"
-
 namespace bp = boost::python;
-
-namespace boost { namespace python { namespace indexing {
-
-template <typename PixelT>
-struct value_traits< boost::shared_ptr< lsst::afw::image::Image<PixelT> > > 
-    : public simple_value_traits< boost::shared_ptr< lsst::afw::image::Image<PixelT> > >
-{
-    BOOST_STATIC_CONSTANT(bool, equality_comparable = false);
-    BOOST_STATIC_CONSTANT(bool, less_than_comparable = false);
-};
-
-template <typename PixelT>
-struct value_traits< boost::shared_ptr< lsst::afw::image::MaskedImage<PixelT> > > 
-    : public simple_value_traits< boost::shared_ptr< lsst::afw::image::MaskedImage<PixelT> > >
-{
-    BOOST_STATIC_CONSTANT(bool, equality_comparable = false);
-    BOOST_STATIC_CONSTANT(bool, less_than_comparable = false);
-};
-
-template <typename PixelT>
-struct value_traits< boost::shared_ptr< std::vector<PixelT> > > 
-    : public simple_value_traits< boost::shared_ptr< std::vector<PixelT> > >
-{
-    BOOST_STATIC_CONSTANT(bool, equality_comparable = false);
-    BOOST_STATIC_CONSTANT(bool, less_than_comparable = false);
-};
-
-}}}
+namespace bpx = boost::python::extensions;
 
 @Namespace(lsst::afw::math) {
     template <typename PixelT>
     void declareStatisticsStack(std::string const & t) {
-        bp::class_< std::vector<typename image::Image<PixelT>::Ptr> >(("ImageVector" + t).c_str())
-            .def(bp::indexing::vector_suite< std::vector<typename image::Image<PixelT>::Ptr> >());
-        bp::class_< std::vector<typename image::MaskedImage<PixelT>::Ptr> >(("MaskedImageVector" + t).c_str())
-            .def(bp::indexing::vector_suite< std::vector<typename image::MaskedImage<PixelT>::Ptr> >());
-        bp::class_< std::vector<PixelT > >(("Vector" + t).c_str())
-            .def(bp::indexing::vector_suite< std::vector<PixelT> >());
-        bp::class_< std::vector< boost::shared_ptr< std::vector<PixelT> > > >(("VectorVector" + t).c_str())
-            .def(bp::indexing::vector_suite< std::vector< boost::shared_ptr< std::vector<PixelT> > > >());
+        bputils::PyContainer< std::vector<typename image::Image<PixelT>::Ptr> >::declare(
+            ("ImageVector" + t).c_str()
+        );
+        bputils::PyContainer< std::vector<typename image::MaskedImage<PixelT>::Ptr> >::declare(
+            ("MaskedImageVector" + t).c_str()
+        );
+        bputils::PyContainer< std::vector<PixelT> >::declare(
+            ("Vector" + t).c_str()
+        );
+        bputils::PyContainer< std::vector< boost::shared_ptr< std::vector<PixelT> > > >::declare(
+            ("VectorVector" + t).c_str()
+        );
         @Function(statisticsStack, tparams={<PixelT>});
     }
 }

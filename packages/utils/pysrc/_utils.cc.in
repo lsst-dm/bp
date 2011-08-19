@@ -33,7 +33,6 @@ void declare() {
 }
 
 BOOST_PYTHON_MODULE(_utils) {
-    lsst::bputils::registerConversions();
     bp::import("lsst.pex.exceptions");
     lsst::utils::declare();
 }

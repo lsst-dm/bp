@@ -1,6 +1,7 @@
-#include "boost/python/eigen.hpp"
+#include "boost/python/extensions/eigen.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 template <typename M>
 bool acceptMatrix(M m) {
@@ -61,7 +62,7 @@ bp::object returnObject() {
 }
 
 template <typename Scalar, int Rows, int Cols>
-Eigen::PythonMatrix<Scalar,Rows,Cols> passPythonMatrix(bp::numpy::matrix const & m) {
+Eigen::PythonMatrix<Scalar,Rows,Cols> passPythonMatrix(bpx::numpy::matrix const & m) {
     return Eigen::PythonMatrix<Scalar,Rows,Cols>(m);
 }
 
@@ -97,7 +98,7 @@ public:
     M const & getMatrix_cref() const { return _matrix; }
     M & getMatrix_ref() { return _matrix; }
 
-    bool compareData(bp::numpy::matrix const & mp) const {
+    bool compareData(bpx::numpy::matrix const & mp) const {
         return _matrix.data() == reinterpret_cast<double const*>(mp.get_data());
     }
 
@@ -106,9 +107,9 @@ public:
     static void declare(char const * name) {
         bp::class_< MatrixOwner, boost::shared_ptr<MatrixOwner> >(name)
             .def("getMatrix_cref", &MatrixOwner::getMatrix_cref,
-                 bp::return_internal_matrix<>())
+                 bpx::return_internal_matrix<>())
             .def("getMatrix_ref", &MatrixOwner::getMatrix_ref,
-                 bp::return_internal_matrix<>())
+                 bpx::return_internal_matrix<>())
             .def("compareData", &MatrixOwner::compareData)
             ;
     }
@@ -117,7 +118,7 @@ public:
 static const int X = Eigen::Dynamic;
 
 BOOST_PYTHON_MODULE(eigen_mod) {
-    bp::numpy::initialize();
+    bpx::numpy::initialize();
     bp::def("acceptMatrix_23d_cref", acceptMatrix< Eigen::Matrix<double,2,3> const &>);
     bp::def("acceptMatrix_X3d_cref", acceptMatrix< Eigen::Matrix<double,X,3> const &>);
     bp::def("acceptMatrix_2Xd_cref", acceptMatrix< Eigen::Matrix<double,2,X> const &>);
@@ -134,10 +135,10 @@ BOOST_PYTHON_MODULE(eigen_mod) {
     bp::def("acceptVector_X1d_cref", acceptVector< Eigen::Matrix<double,X,1> const &>);
     bp::def("acceptVector_14d_cref", acceptVector< Eigen::Matrix<double,1,4> const &>);
     bp::def("acceptVector_1Xd_cref", acceptVector< Eigen::Matrix<double,1,X> const &>);
-    bp::def("returnVector_41d_sq", returnVector< Eigen::Matrix<double,4,1> >, bp::squeeze_matrix<>());
-    bp::def("returnVector_14d_sq", returnVector< Eigen::Matrix<double,1,4> >, bp::squeeze_matrix<>());
-    bp::def("returnVector_X1d_sq", returnVector< Eigen::Matrix<double,X,1> >, bp::squeeze_matrix<>());
-    bp::def("returnVector_1Xd_sq", returnVector< Eigen::Matrix<double,1,X> >, bp::squeeze_matrix<>());
+    bp::def("returnVector_41d_sq", returnVector< Eigen::Matrix<double,4,1> >, bpx::squeeze_matrix<>());
+    bp::def("returnVector_14d_sq", returnVector< Eigen::Matrix<double,1,4> >, bpx::squeeze_matrix<>());
+    bp::def("returnVector_X1d_sq", returnVector< Eigen::Matrix<double,X,1> >, bpx::squeeze_matrix<>());
+    bp::def("returnVector_1Xd_sq", returnVector< Eigen::Matrix<double,1,X> >, bpx::squeeze_matrix<>());
     bp::def("returnVector_41d", returnVector< Eigen::Matrix<double,4,1> >);
     bp::def("returnVector_14d", returnVector< Eigen::Matrix<double,1,4> >);
     bp::def("returnVector_X1d", returnVector< Eigen::Matrix<double,X,1> >);

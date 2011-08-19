@@ -2,6 +2,7 @@
 #include "lsst/afw/math/Background.h"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 

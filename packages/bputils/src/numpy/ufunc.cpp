@@ -1,13 +1,13 @@
-#define BOOST_PYTHON_NUMPY_INTERNAL
-#include <boost/python/numpy/internal.hpp>
-#include <boost/python/numpy/ufunc.hpp>
+#define BOOST_PYTHON_EXTENSIONS_NUMPY_INTERNAL
+#include <boost/python/extensions/numpy/internal.hpp>
+#include <boost/python/extensions/numpy/ufunc.hpp>
 
 namespace boost { namespace python {
 namespace converter {
-NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyArrayMultiIter_Type, python::numpy::multi_iter)
+NUMPY_OBJECT_MANAGER_TRAITS_IMPL(PyArrayMultiIter_Type, python::extensions::numpy::multi_iter)
 } // namespace boost::python::converter
 
-namespace numpy {
+namespace extensions { namespace numpy {
 
 multi_iter make_multi_iter(object const & a1) {
     return multi_iter(python::detail::new_reference(PyArray_MultiIterNew(1, a1.ptr())));
@@ -45,4 +45,4 @@ Py_intptr_t const multi_iter::shape(int n) const {
     return reinterpret_cast<PyArrayMultiIterObject*>(ptr())->dimensions[n];
 }
 
-}}}
+}}}} // namespace boost::python::extensions::numpy

@@ -1,11 +1,12 @@
 #include "lsst/bputils.h"
-
+#include "boost/python/extensions/filesystem.hpp"
 #include "lsst/pex/policy.h"
 #include "lsst/pex/policy/PolicyStreamDestination.h"
 #include "lsst/pex/policy/PolicyStringDestination.h"
 #include "lsst/pex/policy/paf/PAFWriter.h"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 
@@ -38,7 +39,7 @@ namespace bp = boost::python;
                     (bp::arg("name")),
                     @Doc(getPolicy[nonconst])
                 )
-                .@MemberRegex("get[^V]\w+Array", policies={bp::return_value_policy<bp::copy_to_list>()})
+                .@MemberRegex("get[^V]\w+Array", policies={bp::return_value_policy<bpx::copy_to_list>()})
                 .def( // more from the same doxygen bug
                     "set",
                     (void (Policy::*)(const std::string &, const Policy::Ptr &))&Policy::set,
@@ -83,7 +84,7 @@ namespace bp = boost::python;
             wrapper
                 // Because the actual exception type is a proxy, there's some extra 
                 // pure Python code to make constructors work (in __init__.py).
-                .@Member(getParamNames, policies={bp::return_value_policy<bp::copy_to_tuple>()})
+                .@Member(getParamNames, policies={bp::return_value_policy<bpx::copy_to_tuple>()})
                 ;
         }
     };
@@ -92,7 +93,7 @@ namespace bp = boost::python;
 
     @Class(Dictionary) {
         @Customize {
-            wrapper.@Member(makeDef, policies={bp::return_value_policy< bp::manage_new_object >()})
+            wrapper.@Member(makeDef, policies={bp::return_value_policy<bp::manage_new_object>()})
             ;
         }
     };
@@ -150,7 +151,7 @@ namespace bp = boost::python;
     @Class(PolicyDestination, noncopyable=True, exclude_list=[PolicyDestination]) {
         @Customize {
             wrapper
-                .@Member(getOutputStream, policies={bp::return_internal_reference<>()})
+                .@Member(getOutputStream, policies={bpx::return_internal<>()})
             ;
         }
     };
@@ -198,7 +199,7 @@ namespace bp = boost::python;
 }
 
 BOOST_PYTHON_MODULE(_pex_policy) {
-    lsst::bputils::registerConversions();
+    bp::import("lsst.bputils"); // converters for iostreams and boost::filesystem
     bp::import("lsst.daf.base");
     lsst::pex::policy::declare();
 }

@@ -4,6 +4,7 @@
 #include "boost/python/return_opaque_pointer.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 

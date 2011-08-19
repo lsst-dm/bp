@@ -1,12 +1,13 @@
 #include "lsst/bputils.h"
-#include "lsst/bputils/BoostPickleInterface.h"
+#include "lsst/bputils/pickle.h"
 #include "lsst/afw/image/Image.h"
 #include "lsst/afw/formatters/ImageFormatter.h"
 #include "lsst/afw/formatters/DecoratedImageFormatter.h"
 
-#include "boost/python/ndarray.hpp"
+#include "boost/python/extensions/ndarray.hpp"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Namespace(lsst::afw::image) {
 

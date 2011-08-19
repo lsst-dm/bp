@@ -3,13 +3,14 @@
 #include "lsst/afw/image/Image.h"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Namespace(lsst::afw::math) {
 
     @Class(Random) {
         static Random::Algorithm const MT19937 = Random::MT19937;
         @Customize {
-            wrapper.@Member(getAlgorithmNames, policies={bp::return_value_policy<bp::copy_to_tuple>()});
+            wrapper.@Member(getAlgorithmNames, policies={bp::return_value_policy<bpx::copy_to_tuple>()});
         }
     };
     Random::Algorithm const PyRandom::MT19937;

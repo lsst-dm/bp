@@ -1,7 +1,9 @@
 #include "lsst/bputils.h"
+#include "lsst/bputils/containers.h"
 #include "lsst/daf/persistence.h"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 
@@ -11,15 +13,14 @@ namespace bp = boost::python;
 
     @Class(LogicalLocation) {};
 
-    @Class(Storage, noncopyable=True) {
+    @Class(Storage, noncopyable=True, exclude_list=[List]) {
         @Customize {
-            bp::container_from_python_sequence<Storage::List>();
+            bputils::ContainerWrapper<Storage::List>::declare("List");
         }
     };
 
     @Class(DbStorage, noncopyable=True, exclude_list=[setColumn, condParam, getColumnByPos, outParam]) {
         @Customize {
-            bp::container_from_python_sequence<Storage::List>();
             declareTemplates<char>(wrapper, "Char");
             declareTemplates<short>(wrapper, "Short");
             declareTemplates<int>(wrapper, "Int");
@@ -75,7 +76,6 @@ namespace bp = boost::python;
 }
 
 BOOST_PYTHON_MODULE(_daf_persistence) {
-    lsst::bputils::registerConversions();
     bp::import("lsst.daf.base");
     lsst::daf::persistence::declare();
 }

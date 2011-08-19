@@ -1,4 +1,5 @@
 #include "lsst/bputils.h"
+#include "lsst/bputils/containers.h"
 
 #include "lsst/pex/logging/LogRecord.h"
 #include "lsst/pex/logging/LogFormatter.h"
@@ -12,6 +13,7 @@
 #include "lsst/pex/logging/DualLog.h"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 
@@ -31,8 +33,8 @@ namespace bp = boost::python;
 
         @Customize {
             wrapper
-                .@Member(getProperties, policies={bp::const_aware::return_internal<>()})
-                .@Member(data, policies={bp::const_aware::return_internal<>()})
+                .@Member(getProperties, policies={bpx::return_internal<>()})
+                .@Member(data, policies={bpx::return_internal<>()})
             ;
             declareTemplates<bool>(wrapper, "Bool");
             declareTemplates<int>(wrapper, "Int");
@@ -100,7 +102,7 @@ namespace bp = boost::python;
                     (bp::arg("filepath"), bp::arg("verbose")=false,
                      bp::arg("threshold")=int(threshold::PASS_ALL))
                 )
-                .@Member(getPreamble, policies={bp::const_aware::return_internal<>()})
+                .@Member(getPreamble, policies={bpx::return_internal<>()})
                 .@Member(getDefaultLog, policies={bp::return_value_policy< bp::reference_existing_object >()})
                 ;
             declareTemplates<bool>(wrapper, "Bool");
@@ -110,7 +112,9 @@ namespace bp = boost::python;
             declareTemplates<float>(wrapper, "Float");
             declareTemplates<double>(wrapper, "Double");
             declareTemplates<std::string>(wrapper, "String");
-            bp::container_from_python_sequence< std::list< boost::shared_ptr< LogDestination > > >();
+            bputils::ContainerWrapper< std::list< boost::shared_ptr< LogDestination > > >::declare(
+                "LogDestinationList"
+            );
         }
 
         static void addDestination(Log & self, const std::string& filepath, bool verbose, int threshold_) {
@@ -203,7 +207,6 @@ namespace bp = boost::python;
 }
 
 BOOST_PYTHON_MODULE(_pex_logging) {
-    lsst::bputils::registerConversions();
     bp::import("lsst.daf.base");
     lsst::pex::logging::declare();
 }

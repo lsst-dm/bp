@@ -8,6 +8,7 @@
 #include "lsst/daf/data/SupportFactory.h"
 
 namespace bp = boost::python;
+namespace bpx = boost::python::extensions;
 
 @Customize {}
 
@@ -47,7 +48,6 @@ void declare() {
 }
 
 BOOST_PYTHON_MODULE(_daf_data) {
-    lsst::bputils::registerConversions();
     bp::import("lsst.daf.base"); // need to import this so we can subclass Citizen
     lsst::daf::data::declare();
 }

@@ -3,17 +3,16 @@
 #define LSST_bputils_h_INCLUDED
 
 #include "boost/python.hpp"
-#include "boost/python/const_aware.hpp"
-#include "boost/python/to_python/copy_to_tuple.hpp"
-#include "boost/python/to_python/copy_to_list.hpp"
-#include "boost/python/to_python/copy_to_dict.hpp"
-#include "boost/python/to_python/return_none.hpp"
-#include "boost/python/to_python/const_reference_defaults.hpp"
-#include "boost/python/to_python/std_pair.hpp"
-#include "boost/python/from_python/std_pair.hpp"
-#include "boost/python/from_python/container.hpp"
-#include "boost/python/lookup_type.hpp"
+#include "boost/python/extensions/const_aware.hpp"
+#include "boost/python/extensions/copy_to_tuple.hpp"
+#include "boost/python/extensions/copy_to_list.hpp"
+#include "boost/python/extensions/copy_to_dict.hpp"
+#include "boost/python/extensions/return_none.hpp"
+#include "boost/python/extensions/const_reference_defaults.hpp"
+#include "boost/python/extensions/std_pair.hpp"
+#include "boost/python/extensions/std_pair.hpp"
+#include "boost/python/extensions/container_from_python.hpp"
+#include "boost/python/extensions/lookup_type.hpp"
 #include "lsst/bputils/exceptions.h"
-#include "lsst/bputils/conversions.h"
 
 #endif // !LSST_bputils_h_INCLUDED
